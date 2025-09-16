@@ -24,8 +24,8 @@
         @testset "Matrix input method" begin
             # Test with matrix (columns = scenarios)
             nowcasts_matrix = [10.0 9.5 10.2;
-                              11.0 10.8 11.1;
-                              12.0 11.2 12.1]
+                               11.0 10.8 11.1;
+                               12.0 11.2 12.1]
 
             result = create_nowcast_data(nowcasts_matrix, dates)
 
@@ -64,7 +64,8 @@
             dates_short = [Date(2024, 1, 1), Date(2024, 1, 2)]
 
             # Empty nowcasts
-            @test_throws AssertionError create_nowcast_data(Vector{Vector{Float64}}(), dates_short)
+            @test_throws AssertionError create_nowcast_data(
+                Vector{Vector{Float64}}(), dates_short)
 
             # Mismatched lengths - dates vs nowcast length
             wrong_length_vec = [[10.0, 11.0, 12.0]]  # 3 elements but only 2 dates

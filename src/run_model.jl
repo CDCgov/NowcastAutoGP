@@ -115,7 +115,7 @@ function get_transformationtions(transform_name, data_values)
         else
             @info "Using Box-Cox transformation with λ = $λ"
             # Robust inverse Box-Cox transformation that handles negative λ and edge cases
-            inv_boxcox = function(y)
+            inv_boxcox = function (y)
                 lambda_y_plus_1 = λ * y + 1
 
                 # Handle edge cases based on λ sign and lambda_y_plus_1 value

@@ -59,7 +59,8 @@ forecast_dates = Date(2024,1,1):Day(1):Date(2024,1,10) # Can overlap with nowcas
 forecasts = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates, 100)
 ```
 """
-function forecast_with_nowcasts(base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:NamedTuple},
+function forecast_with_nowcasts(
+        base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:NamedTuple},
         forecast_dates, forecast_draws_per_nowcast::Int;
         inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
@@ -76,7 +77,6 @@ function forecast_with_nowcasts(base_model::AutoGP.GPModel, nowcasts::AbstractVe
         # Resample particles if effective sample size is below threshold
 
         AutoGP.maybe_resample!(base_model, ess_threshold * AutoGP.num_particles(base_model))
-
 
         # Optional: Refine the GP models with MCMC steps to incorporate the new data
         # into the kernel structure

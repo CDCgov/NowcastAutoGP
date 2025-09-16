@@ -38,7 +38,8 @@ function _inv_boxcox(λ::Real, offset::F) where {F}
     return _inv
 end
 
-function get_transformationtions(transform_name::String, values::Vector{F}) where {F<:Real}
+function get_transformationtions(
+        transform_name::String, values::Vector{F}) where {F <: Real}
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (y -> logit(y / 100), y -> logistic(y) * 100)

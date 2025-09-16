@@ -59,7 +59,6 @@ struct TData{D, F}
         len_ds = length(ds)
         len_values = length(values)
 
-
         # Find common type and convert both vectors
         F = promote_type(eltype(y), V)
         converted_y = convert.(F, y)
@@ -75,4 +74,6 @@ end
 
 Convenience function to create a `TData` instance from any iterable inputs of dates/times and values.
 """
-create_transformed_data(ds, values; transformation) = TData(collect(ds), collect(values); transformation = transformation)
+function create_transformed_data(ds, values; transformation)
+    TData(collect(ds), collect(values); transformation = transformation)
+end
