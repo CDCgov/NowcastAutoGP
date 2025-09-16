@@ -50,14 +50,10 @@ struct TData{D, F}
     values::Vector{F}
 
     function TData(ds::Vector{D}, values::Vector{V}; transformation) where {D, V}
-        @assert len_ds == len_values "length of `ds` should match length of `values`"
+        @assert length(ds) == length(values) "length of `ds` should match length of `values`"
 
         # Apply the transformation to the target values
         y = transformation.(values)
-
-        # Ensure all vectors have the same length
-        len_ds = length(ds)
-        len_values = length(values)
 
         # Find common type and convert both vectors
         F = promote_type(eltype(y), V)
