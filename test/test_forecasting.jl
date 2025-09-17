@@ -1,5 +1,5 @@
 @testsnippet ForecastingData begin
-    using DataFramesMeta, Dates, LogExpFunctions
+    using Dates, LogExpFunctions
     using Random
     Random.seed!(123)  # For reproducible test data
 
