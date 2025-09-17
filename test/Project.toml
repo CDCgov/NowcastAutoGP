@@ -1,4 +1,6 @@
 [deps]
+AutoGP = "6eb593e7-dfb4-4e48-b98e-d7222cdf0053"
+DataFramesMeta = "1313f7d8-7da2-5740-9ea0-a2ca25f37964"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 TestItemRunner = "f8b46487-2199-4994-9208-9a1283c18c0a"
