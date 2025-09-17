@@ -60,7 +60,7 @@ forecasts = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates
 ```
 """
 function forecast_with_nowcasts(
-        base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:NamedTuple},
+        base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:TData},
         forecast_dates, forecast_draws_per_nowcast::Int;
         inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
