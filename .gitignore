@@ -380,3 +380,6 @@ docs/site/
 # applications that require a static environment.
 #Manifest.toml
 .DS_Store
+.vscode/settings.json
+Manifest.toml
+development.md
