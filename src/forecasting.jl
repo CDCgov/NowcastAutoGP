@@ -68,10 +68,9 @@ function forecast_with_nowcasts(
 
     # Process each nowcast scenario
     forecasts_over_nowcasts = mapreduce(hcat, nowcasts) do nowcast
-        # Create a working copy of the base model to preserve learned parameters
-        # model_with_nowcast = deepcopy(base_model)
-
-        # Add the nowcast data to the copied model
+        # Add the nowcast data to the model
+        # NB: this work-around is necessary because of a problem with serialization of models and their deep copying
+        # https://github.com/probsys/AutoGP.jl/issues/28#issuecomment-3300543503
         AutoGP.add_data!(base_model, nowcast.ds, nowcast.y)
 
         # Resample particles if effective sample size is below threshold
