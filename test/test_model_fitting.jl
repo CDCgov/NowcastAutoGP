@@ -1,5 +1,5 @@
 @testsnippet ModelFittingData begin
-    using AutoGP, DataFramesMeta, Dates
+    using AutoGP, Dates
     using Random
     Random.seed!(42)  # For reproducible test data
 
@@ -7,16 +7,13 @@
     dates = collect(Date(2024, 1, 1):Day(1):Date(2024, 1, 30))
     # Generate some synthetic data with trend and noise
     values = 100.0 .+ 0.5 * (1:length(dates)) .+ 5.0 * randn(length(dates))
-    df = DataFrame(date = dates, value = values)
 
     # Small dataset for minimal testing
     small_dates = collect(Date(2024, 1, 1):Day(1):Date(2024, 1, 10))
     small_values = [10.0, 12.0, 11.0, 13.0, 14.0, 12.0, 15.0, 16.0, 14.0, 13.0]
-    small_df = DataFrame(date = small_dates, value = small_values)
 
     # Positive values for log transformation testing
     positive_values = abs.(values) .+ 1.0
-    df_positive = DataFrame(date = dates, value = positive_values)
 
     # Test parameters (small values for faster testing)
     test_params = (n_particles = 1, n_mcmc = 10, n_hmc = 5)
