@@ -1,4 +1,4 @@
-function _inv_boxcox(λ::Real, offset::F) where {F}
+function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
     function _inv(y)
         lambda_y_plus_1 = λ * y + one(F)
 
@@ -24,7 +24,7 @@ function _inv_boxcox(λ::Real, offset::F) where {F}
                     # lambda_y_plus_1 is very small but positive
                     clamped_result = lambda_y_plus_1^(1/λ)
                     # Clamp extremely large values to reasonable bounds
-                    max_reasonable = F(1000) * maximum(values)  # 1000x the max observed value
+                    max_reasonable = F(1000 * max_values) # 1000x the max observed value
                     result = min(clamped_result, max_reasonable) - offset
                 end
             end
@@ -49,10 +49,11 @@ function get_transformations(
         return (y -> log(y + offset), y -> max(exp(y) - offset, 0.0))
     elseif transform_name == "boxcox"
         offset = minimum(values[values .> 0]) / 2 # Half the minimum positive value for stability
+        max_values = maximum(values)
         bc = fit(BoxCoxTransformation, values .+ offset) # Fit Box-Cox transformation
         λ = bc.λ
         @info "Using Box-Cox transformation with λ = $λ and offset = $offset"
-        return (y -> bc(y + offset), _inv_boxcox(λ, offset))
+        return (y -> bc(y + offset), _inv_boxcox(λ, offset, max_values))
     else
         throw(AssertionError("Unknown transform_name: $transform_name"))
     end

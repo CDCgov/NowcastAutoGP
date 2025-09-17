@@ -142,6 +142,100 @@ end
     end
 end
 
+@testitem "get_transformations BoxCox Edge Cases" setup=[DataSnippet] begin
+    # Test with very small positive values to trigger edge cases
+    small_values = [1e-8, 1e-6, 1e-4, 0.001, 0.01, 0.1, 1.0, 10.0]
+    forward_transform, inverse_transform = get_transformations("boxcox", small_values)
+
+    # Test round-trip for small values
+    for val in small_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-6
+    end
+
+    # Test that inverse transform handles very negative inputs gracefully
+    # (these would correspond to very small lambda_y_plus_1 values)
+    very_negative_inputs = [-100.0, -50.0, -20.0, -10.0]
+    for input in very_negative_inputs
+        result = inverse_transform(input)
+        @test result ≥ 0.0  # Should never return negative values
+        @test isfinite(result)  # Should always be finite
+    end
+
+    # Test that inverse transform handles very positive inputs gracefully
+    very_positive_inputs = [100.0, 50.0, 20.0, 10.0]
+    for input in very_positive_inputs
+        result = inverse_transform(input)
+        @test result ≥ 0.0  # Should never return negative values
+        @test isfinite(result)  # Should always be finite
+    end
+end
+
+@testitem "get_transformations BoxCox Negative Lambda" setup=[DataSnippet] begin
+    # Force a scenario that might lead to negative lambda by using specific data pattern
+    # Values that decrease might lead to negative lambda in Box-Cox fitting
+    decreasing_values = [100.0, 50.0, 25.0, 12.5, 6.25, 3.125]
+    forward_transform, inverse_transform = get_transformations("boxcox", decreasing_values)
+
+    # Test round-trip even with potentially negative lambda
+    for val in decreasing_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-4  # Slightly looser tolerance for edge cases
+    end
+
+    # Test edge case inputs that might trigger the negative lambda handling
+    edge_inputs = [-5.0, -2.0, -1.0, -0.5, -0.1, 0.0, 0.1, 0.5, 1.0, 2.0, 5.0]
+    for input in edge_inputs
+        result = inverse_transform(input)
+        @test result ≥ 0.0  # Should clamp to non-negative
+        @test isfinite(result)  # Should be finite
+    end
+end
+
+@testitem "get_transformations BoxCox Zero Lambda Case" setup=[DataSnippet] begin
+    # Test case where lambda might be very close to zero (log transformation)
+    # Use values that often lead to lambda ≈ 0 in Box-Cox
+    log_like_values = [1.0, 2.718, 7.389, 20.086, 54.598]  # Roughly exp(0), exp(1), etc.
+    forward_transform, inverse_transform = get_transformations("boxcox", log_like_values)
+
+    # Test that it handles inputs appropriately
+    test_inputs = [-10.0, -5.0, -1.0, 0.0, 1.0, 5.0, 10.0]
+    for input in test_inputs
+        result = inverse_transform(input)
+        @test result ≥ 0.0
+        @test isfinite(result)
+    end
+
+    # Test round-trip
+    for val in log_like_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-5
+    end
+end
+
+@testitem "get_transformations BoxCox Numerical Stability" setup=[DataSnippet] begin
+    # Test with extreme values to check numerical stability
+    extreme_values = [1e-10, 1e-5, 1e-2, 1.0, 1e2, 1e5, 1e8]
+    forward_transform, inverse_transform = get_transformations("boxcox", extreme_values)
+
+    # Test that extreme transformed values don't break the inverse
+    for val in extreme_values
+        transformed = forward_transform(val)
+
+        # Test the transformed value itself
+        @test isfinite(transformed)
+
+        # Test inverse
+        recovered = inverse_transform(transformed)
+        @test isfinite(recovered)
+        @test recovered ≥ 0.0
+        @test recovered ≈ val rtol=1e-3  # Relative tolerance for extreme values
+    end
+end
+
 @testitem "get_transformations Unknown Error" setup=[DataSnippet] begin
     @test_throws AssertionError get_transformations("unknown", test_values)
 end
