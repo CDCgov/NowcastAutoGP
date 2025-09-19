@@ -40,15 +40,14 @@ end
 
 function get_transformations(
         transform_name::String, values::Vector{F}) where {F <: Real}
+    offset = minimum(values) == zero(F) ? zero(F) : minimum(values[values .> 0]) / 2 # Half the minimum positive value for stability
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (y -> logit(y / 100), y -> logistic(y) * 100)
     elseif transform_name == "positive"
-        offset = minimum(values[values .> 0]) / 2 # Half the minimum positive value for stability
         @info "Using positive transformation with offset = $offset"
         return (y -> log(y + offset), y -> max(exp(y) - offset, 0.0))
     elseif transform_name == "boxcox"
-        offset = minimum(values[values .> 0]) / 2 # Half the minimum positive value for stability
         max_values = maximum(values)
         bc = fit(BoxCoxTransformation, values .+ offset) # Fit Box-Cox transformation
         λ = bc.λ
