@@ -40,7 +40,7 @@ end
 
 function get_transformations(
         transform_name::String, values::Vector{F}) where {F <: Real}
-    offset = minimum(values) == zero(F) ? zero(F) : minimum(values[values .> 0]) / 2 # Half the minimum positive value for stability
+    offset = minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (y -> logit(y / 100), y -> logistic(y) * 100)
