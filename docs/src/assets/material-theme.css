@@ -1,0 +1,441 @@
+/* Material Design Theme for Documenter.jl */
+/* Based on Material Design 3 (Material You) principles */
+
+:root {
+  /* Material Design 3 Color Tokens */
+  --md-primary-color: #1976d2;
+  --md-primary-variant: #1565c0;
+  --md-secondary-color: #03dac6;
+  --md-secondary-variant: #018786;
+  --md-background: #fafafa;
+  --md-surface: #ffffff;
+  --md-surface-variant: #f5f5f5;
+  --md-on-surface: #1d1b20;
+  --md-on-surface-variant: #49454f;
+  --md-outline: #79747e;
+  --md-outline-variant: #cac4d0;
+
+  /* Typography scale */
+  --md-sys-typescale-display-large-font-family-name: 'Roboto';
+  --md-sys-typescale-display-large-font-family-style: normal;
+  --md-sys-typescale-display-large-font-weight: 400;
+  --md-sys-typescale-display-large-font-size: 57px;
+  --md-sys-typescale-display-large-line-height: 64px;
+
+  /* Elevation shadows */
+  --md-elevation-1: 0px 1px 3px rgba(0, 0, 0, 0.12), 0px 1px 2px rgba(0, 0, 0, 0.24);
+  --md-elevation-2: 0px 3px 6px rgba(0, 0, 0, 0.16), 0px 3px 6px rgba(0, 0, 0, 0.23);
+  --md-elevation-3: 0px 10px 20px rgba(0, 0, 0, 0.19), 0px 6px 6px rgba(0, 0, 0, 0.23);
+  --md-elevation-4: 0px 14px 28px rgba(0, 0, 0, 0.25), 0px 10px 10px rgba(0, 0, 0, 0.22);
+
+  /* Border radius */
+  --md-border-radius-xs: 4px;
+  --md-border-radius-sm: 8px;
+  --md-border-radius-md: 12px;
+  --md-border-radius-lg: 16px;
+  --md-border-radius-xl: 28px;
+}
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&family=Roboto+Mono:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* Base styles */
+html {
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: var(--md-on-surface);
+  background-color: var(--md-background);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--md-background);
+}
+
+/* Main layout improvements */
+#documenter .docs-main {
+  background-color: var(--md-background);
+  min-height: 100vh;
+}
+
+/* Header/Navigation Bar */
+#documenter .docs-navbar {
+  background-color: var(--md-surface);
+  box-shadow: var(--md-elevation-2);
+  border-bottom: 1px solid var(--md-outline-variant);
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+#documenter .docs-navbar .docs-navbar-link {
+  color: var(--md-primary-color);
+  font-weight: 500;
+  text-decoration: none;
+  font-size: 1.25rem;
+  letter-spacing: 0.0125em;
+}
+
+/* Sidebar styling */
+#documenter .docs-sidebar {
+  background-color: var(--md-surface);
+  border-right: 1px solid var(--md-outline-variant);
+  box-shadow: var(--md-elevation-1);
+  padding: 16px 0;
+  width: 280px;
+}
+
+#documenter .docs-sidebar .docs-logo {
+  text-align: center;
+  padding: 24px 16px;
+  border-bottom: 1px solid var(--md-outline-variant);
+  margin-bottom: 16px;
+}
+
+#documenter .docs-sidebar .docs-package-name {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--md-primary-color);
+  margin: 0;
+}
+
+#documenter .docs-sidebar .docs-version-selector {
+  margin-top: 8px;
+}
+
+/* Sidebar navigation */
+#documenter .docs-sidebar ul.docs-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#documenter .docs-sidebar li.docs-menu-item {
+  margin: 0;
+}
+
+#documenter .docs-sidebar a.tocitem {
+  display: block;
+  padding: 12px 24px;
+  color: var(--md-on-surface);
+  text-decoration: none;
+  border-radius: 0 var(--md-border-radius-xl) var(--md-border-radius-xl) 0;
+  margin-right: 12px;
+  transition: all 0.2s ease;
+  font-weight: 400;
+  position: relative;
+}
+
+#documenter .docs-sidebar a.tocitem:hover {
+  background-color: var(--md-surface-variant);
+  color: var(--md-primary-color);
+}
+
+#documenter .docs-sidebar a.tocitem.current {
+  background-color: var(--md-primary-color);
+  color: white;
+  font-weight: 500;
+}
+
+/* Main content area */
+#documenter .docs-main main {
+  background-color: var(--md-surface);
+  margin: 24px;
+  margin-left: 0;
+  border-radius: var(--md-border-radius-lg);
+  box-shadow: var(--md-elevation-1);
+  padding: 32px;
+  max-width: none;
+}
+
+/* Typography improvements */
+#documenter h1 {
+  font-size: 3rem;
+  font-weight: 400;
+  color: var(--md-on-surface);
+  margin: 0 0 24px 0;
+  line-height: 1.2;
+  letter-spacing: -0.0156em;
+}
+
+#documenter h2 {
+  font-size: 2.25rem;
+  font-weight: 400;
+  color: var(--md-on-surface);
+  margin: 48px 0 16px 0;
+  line-height: 1.3;
+  letter-spacing: -0.0083em;
+  border-bottom: 2px solid var(--md-primary-color);
+  padding-bottom: 8px;
+}
+
+#documenter h3 {
+  font-size: 1.75rem;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin: 32px 0 16px 0;
+  line-height: 1.4;
+}
+
+#documenter h4 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin: 24px 0 12px 0;
+  line-height: 1.4;
+}
+
+#documenter p {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--md-on-surface);
+  margin: 0 0 16px 0;
+}
+
+/* Code blocks */
+#documenter pre {
+  background-color: var(--md-surface-variant);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-border-radius-sm);
+  padding: 16px;
+  overflow-x: auto;
+  margin: 16px 0;
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+#documenter code {
+  font-family: 'Roboto Mono', 'Courier New', monospace;
+  font-size: 0.875rem;
+  background-color: var(--md-surface-variant);
+  padding: 2px 6px;
+  border-radius: var(--md-border-radius-xs);
+  color: var(--md-on-surface-variant);
+}
+
+#documenter pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+/* Links */
+#documenter a {
+  color: var(--md-primary-color);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s ease;
+}
+
+#documenter a:hover {
+  border-bottom-color: var(--md-primary-color);
+}
+
+/* Blockquotes */
+#documenter blockquote {
+  border-left: 4px solid var(--md-primary-color);
+  background-color: var(--md-surface-variant);
+  margin: 16px 0;
+  padding: 16px 24px;
+  border-radius: 0 var(--md-border-radius-sm) var(--md-border-radius-sm) 0;
+}
+
+/* Tables */
+#documenter table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  background-color: var(--md-surface);
+  border-radius: var(--md-border-radius-sm);
+  overflow: hidden;
+  box-shadow: var(--md-elevation-1);
+}
+
+#documenter table th {
+  background-color: var(--md-primary-color);
+  color: white;
+  padding: 16px;
+  text-align: left;
+  font-weight: 500;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+#documenter table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+#documenter table tr:last-child td {
+  border-bottom: none;
+}
+
+#documenter table tr:nth-child(even) {
+  background-color: var(--md-surface-variant);
+}
+
+/* Documentation sections */
+#documenter .docstring {
+  background-color: var(--md-surface);
+  border: 1px solid var(--md-outline-variant);
+  border-radius: var(--md-border-radius-md);
+  margin: 24px 0;
+  overflow: hidden;
+  box-shadow: var(--md-elevation-1);
+}
+
+#documenter .docstring header {
+  background-color: var(--md-surface-variant);
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--md-outline-variant);
+}
+
+#documenter .docstring header .docstring-binding {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--md-primary-color);
+}
+
+#documenter .docstring section {
+  padding: 24px;
+}
+
+/* Admonitions/Notes */
+#documenter .admonition {
+  border-radius: var(--md-border-radius-md);
+  margin: 24px 0;
+  overflow: hidden;
+  box-shadow: var(--md-elevation-2);
+}
+
+#documenter .admonition.is-info {
+  border-left: 4px solid #2196f3;
+  background-color: #e3f2fd;
+}
+
+#documenter .admonition.is-warning {
+  border-left: 4px solid #ff9800;
+  background-color: #fff3e0;
+}
+
+#documenter .admonition.is-danger {
+  border-left: 4px solid #f44336;
+  background-color: #ffebee;
+}
+
+#documenter .admonition.is-success {
+  border-left: 4px solid #4caf50;
+  background-color: #e8f5e8;
+}
+
+#documenter .admonition-header {
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 12px 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+#documenter .admonition-body {
+  padding: 16px;
+}
+
+/* Search */
+#documenter .docs-search {
+  margin: 16px 24px;
+}
+
+#documenter .docs-search input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--md-outline-variant);
+  border-radius: var(--md-border-radius-xl);
+  font-size: 1rem;
+  background-color: var(--md-surface-variant);
+  color: var(--md-on-surface);
+  transition: border-color 0.2s ease;
+}
+
+#documenter .docs-search input:focus {
+  outline: none;
+  border-color: var(--md-primary-color);
+  background-color: var(--md-surface);
+}
+
+/* Footer */
+#documenter .docs-footer {
+  background-color: var(--md-surface-variant);
+  padding: 32px 24px;
+  margin-top: 48px;
+  border-top: 1px solid var(--md-outline-variant);
+  text-align: center;
+  color: var(--md-on-surface-variant);
+  font-size: 0.875rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #documenter .docs-sidebar {
+    width: 100%;
+    position: fixed;
+    top: 64px;
+    left: -100%;
+    height: calc(100vh - 64px);
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  #documenter .docs-sidebar.is-open {
+    left: 0;
+  }
+
+  #documenter .docs-main main {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  #documenter h1 {
+    font-size: 2rem;
+  }
+
+  #documenter h2 {
+    font-size: 1.5rem;
+  }
+}
+
+/* Scrollbar styling for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-surface-variant);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--md-outline);
+  border-radius: var(--md-border-radius-xs);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--md-on-surface-variant);
+}
+
+/* Print styles */
+@media print {
+  #documenter .docs-sidebar {
+    display: none;
+  }
+
+  #documenter .docs-main main {
+    margin: 0;
+    box-shadow: none;
+    padding: 0;
+  }
+}

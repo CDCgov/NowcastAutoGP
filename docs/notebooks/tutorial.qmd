@@ -1,0 +1,322 @@
+---
+title: "Getting Started with `NowcastAutoGP`"
+subtitle: "Combining nowcasting and `AutoGP`"
+author: "CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)"
+engine: julia
+julia:
+  exeflags: ["--project=./..", "--threads=4"]
+format: gfm
+execute:
+  echo: true
+  warning: false
+  cache: true
+---
+
+# Introduction
+
+This tutorial demonstrates how to use NowcastAutoGP for epidemiological nowcasting - estimating current disease activity when reporting delays exist. This is a common challenge in public health surveillance where case reports arrive with delays.
+
+## What is Nowcasting?
+
+Nowcasting helps answer: *"What's the true number of cases today, given that reports are delayed?"*
+
+Common applications:
+- COVID-19 hospital admissions
+- Influenza-like illness surveillance
+- Foodborne illness outbreaks
+- Emergency department visits
+
+## Setup
+
+```{julia}
+using Pkg
+Pkg.resolve()
+Pkg.instantiate()
+Pkg.precompile()
+```
+
+```{julia}
+using NowcastAutoGP
+using CairoMakie
+using Dates, Distributions, Random
+using CSV, TidierData
+
+# Set random seed for reproducibility
+Random.seed!(123)
+
+# Set CairoMakie output to png for quarto compat
+CairoMakie.activate!(type = "png")
+```
+
+## Loading Surveillance Data
+
+```{julia}
+datapath = joinpath(@__DIR__(), "data", "vintaged_us_nhsn_data.csv")
+nhsn_vintage_covid_data = CSV.read(datapath, DataFrame)
+@glimpse(nhsn_vintage_covid_data)
+```
+
+We see that the most recent report date, especially, is often revised upward eventually.
+
+```{julia}
+#| fig-cap: This figure shows nowcasting problem
+
+# Filter data for October 2024 onwards and create scatter-line plot
+filtered_data = nhsn_vintage_covid_data
+
+
+# @chain nhsn_vintage_covid_data begin
+#     @filter(reference_date >= Date(2024, 10, 1))
+# end
+
+unique_report_dates = sort(unique(filtered_data.report_date))
+# Select every 4th report date, but always include the latest one
+selected_dates = unique_report_dates[1:4:end]
+if unique_report_dates[end] ∉ selected_dates
+    selected_dates = vcat(selected_dates, unique_report_dates[end])
+end
+n_dates = length(selected_dates)
+
+# Create figure
+fig = Figure(size = (800, 600))
+ax = Axis(fig[1, 1],
+    xlabel = "Reference Date",
+    ylabel = "NHSN confirmed Covid hospitalisations",
+    title = "Reference Date vs Confirm by Report Date (Oct 2024+, all US)"
+)
+
+# Generate colors - latest date will be black
+colors = [i == n_dates ? :black : Makie.wong_colors()[mod1(i, 7)] for i in 1:n_dates]
+
+# Plot each selected report date
+for (report_date, color) in zip(selected_dates, colors)
+    date_data = @chain filtered_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    scatterlines!(ax, date_data.reference_date, date_data.confirm,
+        color = color,
+        label = string(report_date),
+        markersize = 8,
+        linewidth = 2
+    )
+end
+
+# Add legend
+axislegend(ax, position = :rt)
+xlims!(ax, Date(2024, 10, 1), Date(2025, 9, 1))
+ylims!(ax, 0, 2.2e4)
+fig
+```
+
+## Forecasting
+
+### Forecasting naively
+
+Naively, we could just use `AutoGP` on the latest data.
+
+
+```{julia}
+
+# report_date = first(selected_dates)
+naive_forecasts_by_reference_date = map(selected_dates) do report_date
+  date_data = @chain filtered_data begin
+          @filter(report_date == !!report_date)
+          @arrange(reference_date)
+      end
+  forecast_dates = [maximum(date_data.reference_date) + Week(k) for k = 1:8]
+
+  transformation, inv_transformation = get_transformations("boxcox", date_data.confirm)
+  data_to_fit = create_transformed_data(date_data.reference_date, date_data.confirm; transformation)
+  model = make_and_fit_model(data_to_fit; n_particles = 8, smc_data_proportion = 0.1,
+          n_mcmc = 50, n_hmc = 15)
+  forecasts = forecast(model, forecast_dates, 2000; inv_transformation)
+
+  iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+    qs = quantile(fc, [0.25, 0.5, 0.75])
+    qs'
+  end
+
+  return (dates = forecast_dates, iqrs = iqr_forecasts)
+end
+
+```
+
+
+```{julia}
+
+n_ahead = 4
+# Plot forecasts with matching colors
+fig2 = Figure(size = (1000, 700))
+ax2 = Axis(fig2[1, 1],
+    xlabel = "Date",
+    ylabel = "NHSN confirmed Covid hospitalizations",
+    title = "Forecasts from Different Report Dates"
+)
+
+# Use the same colors as before
+colors = [i == n_dates ? :black : Makie.wong_colors()[mod1(i, 7)] for i in 1:n_dates]
+
+
+# Plot forecasts
+for (report_date, forecast, color) in zip(selected_dates, naive_forecasts_by_reference_date, colors)
+
+    date_data = @chain filtered_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    # Plot historical data as light lines
+    scatterlines!(ax2, date_data.reference_date, date_data.confirm,
+        color = color,  # Make it semi-transparent
+        linewidth = 2
+    )
+
+    # Extract quantiles
+    q25 = forecast.iqrs[1:n_ahead, 1]  # 25th percentile
+    median = forecast.iqrs[1:n_ahead, 2]  # 50th percentile (median)
+    q75 = forecast.iqrs[1:n_ahead, 3]  # 75th percentile
+
+    # Plot 25th percentile (dashed)
+    lines!(ax2, forecast.dates[1:n_ahead], q25,
+        color = (color, 0.5),
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) 25%"
+    )
+
+    # Plot median forecast (solid)
+    scatterlines!(ax2, forecast.dates[1:n_ahead], median,
+        color = color,
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) median"
+    )
+
+    # Plot 75th percentile (dashed)
+    lines!(ax2, forecast.dates[1:n_ahead], q75,
+        color = (color, 0.5),
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) 75%"
+    )
+
+end
+
+# Add legend
+# axislegend(ax2, position = :lt, nbanks = 3)
+xlims!(ax2, Date(2024, 10, 1), Date(2025, 10, 1))
+ylims!(ax2, 0, 2.2e4)
+fig2
+```
+## Basic Nowcasting
+
+Now let's use NowcastAutoGP to estimate the true current case counts:
+
+```{julia}
+
+nowcast_forecasts_by_reference_date = map(selected_dates) do report_date
+  date_data = @chain filtered_data begin
+          @filter(report_date == !!report_date)
+          @arrange(reference_date)
+      end
+  forecast_dates = [maximum(date_data.reference_date) + Week(k) for k = 0:8]
+
+  transformation, inv_transformation = get_transformations("boxcox", date_data.confirm)
+  data_to_fit = create_transformed_data(date_data.reference_date[1:(end-1)], date_data.confirm[1:(end-1)]; transformation)
+
+  nowcast_samples = [[date_data.confirm[end] * exp(0.1 + randn() * 0.027)] for _ = 1:100]
+
+  nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]]; transformation = transformation)
+
+  model = make_and_fit_model(data_to_fit; n_particles = 8, smc_data_proportion = 0.1,
+          n_mcmc = 50, n_hmc = 15)
+
+  forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, 2000 ÷ 100 ; inv_transformation)
+
+  iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+    qs = quantile(fc, [0.25, 0.5, 0.75])
+    qs'
+  end
+
+  return (dates = forecast_dates, iqrs = iqr_forecasts)
+end
+```
+
+## Visualizing Results
+
+```{julia}
+n_ahead = 5
+# Plot forecasts with matching colors
+fig2 = Figure(size = (1000, 700))
+ax2 = Axis(fig2[1, 1],
+    xlabel = "Date",
+    ylabel = "NHSN confirmed Covid hospitalizations",
+    title = "Forecasts from Different Report Dates (Nowcast)"
+)
+
+# Use the same colors as before
+colors = [i == n_dates ? :black : Makie.wong_colors()[mod1(i, 7)] for i in 1:n_dates]
+
+
+# Plot forecasts
+for (report_date, forecast, color) in zip(selected_dates, nowcast_forecasts_by_reference_date, colors)
+
+    date_data = @chain filtered_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    # Plot historical data as light lines
+    scatterlines!(ax2, date_data.reference_date, date_data.confirm,
+        color = color,  # Make it semi-transparent
+        linewidth = 2
+    )
+
+    # Extract quantiles
+    q25 = forecast.iqrs[1:n_ahead, 1]  # 25th percentile
+    median = forecast.iqrs[1:n_ahead, 2]  # 50th percentile (median)
+    q75 = forecast.iqrs[1:n_ahead, 3]  # 75th percentile
+
+    # Plot 25th percentile (dashed)
+    lines!(ax2, forecast.dates[1:n_ahead], q25,
+        color = (color, 0.5),
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) 25%"
+    )
+
+    # Plot median forecast (solid)
+    scatterlines!(ax2, forecast.dates[1:n_ahead], median,
+        color = color,
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) median"
+    )
+
+    # Plot 75th percentile (dashed)
+    lines!(ax2, forecast.dates[1:n_ahead], q75,
+        color = (color, 0.5),
+        linewidth = 2,
+        linestyle = :dash,
+        label = "$(report_date) 75%"
+    )
+
+end
+
+# Add legend
+# axislegend(ax2, position = :lt, nbanks = 3)
+xlims!(ax2, Date(2024, 10, 1), Date(2025, 10, 01))
+ylims!(ax2, 0, 2.2e4)
+fig2
+```
+
+## Scoring
+
+## Next Steps
+
+
+---
+
+*This tutorial is part of the NowcastAutoGP documentation suite developed by CDC's Center for Forecasting and Outbreak Analytics.*
