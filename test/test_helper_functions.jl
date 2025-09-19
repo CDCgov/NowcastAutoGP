@@ -4,6 +4,7 @@
     # Test data setup - main datasets
     dates = collect(Date(2024, 1, 1):Day(1):Date(2024, 1, 10))
     values = [10.0, 15.0, 12.0, 18.0, 22.0, 25.0, 20.0, 16.0, 14.0, 11.0]
+    values_with_zero = [0.0, 15.0, 12.0, 0.0, 22.0, 25.0, 0.0, 16.0, 14.0, 11.0]
 
     # Additional test datasets
     dates_short = collect(Date(2024, 1, 1):Day(1):Date(2024, 1, 5))
@@ -141,6 +142,53 @@ end
         @test recovered ≈ val atol=1e-6
     end
 end
+
+@testitem "get_transformations Percentage with data with zeros" setup=[DataSnippet] begin
+    forward_transform, inverse_transform = get_transformations("percentage", values_with_zero)
+
+    # Test that we get functions
+    @test isa(forward_transform, Function)
+    @test isa(inverse_transform, Function)
+
+    # Test round-trip transformation for percentage values
+    for val in percentage_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-10
+    end
+end
+
+@testitem "get_transformations Positive with zeros" setup=[DataSnippet] begin
+    forward_transform, inverse_transform = get_transformations("positive", values_with_zero)
+
+    @test isa(forward_transform, Function)
+    @test isa(inverse_transform, Function)
+
+    # Test round-trip for positive values
+    for val in positive_values
+        if val > 0  # Only test positive values
+            transformed = forward_transform(val)
+            recovered = inverse_transform(transformed)
+            @test recovered ≈ val atol=1e-6
+        end
+    end
+end
+
+@testitem "get_transformations BoxCox with zeros" setup=[DataSnippet] begin
+    boxcox_values = [1.0, 2.0, 5.0, 10.0, 20.0]  # BoxCox requires positive values
+    forward_transform, inverse_transform = get_transformations("boxcox", values_with_zero)
+
+    @test isa(forward_transform, Function)
+    @test isa(inverse_transform, Function)
+
+    # Test round-trip for positive values (BoxCox requires positive values)
+    for val in boxcox_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-6
+    end
+end
+
 
 @testitem "get_transformations BoxCox Edge Cases" setup=[DataSnippet] begin
     # Test with very small positive values to trigger edge cases
