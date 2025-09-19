@@ -38,15 +38,93 @@ function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
     return _inv
 end
 
+function _get_offet(values::Vector{F}) where {F <: Real}
+    @assert !isempty(values) "Values array must not be empty"
+    @assert all(values .>= zero(F)) "All values must be non-negative for the selected transformations"
+    return minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability
+end
+
+"""
+    get_transformations(transform_name::String, values::Vector{F}) where {F <: Real}
+
+Return a tuple of transformation and inverse transformation functions for the specified transformation type.
+
+This function creates appropriate data transformations for Gaussian Process modeling, where the goal is to
+transform the input data to make it more suitable for modeling (typically more Gaussian-like) and then
+provide the inverse transformation to convert predictions back to the original scale.
+
+# Arguments
+- `transform_name::String`: The name of the transformation to apply. Supported values:
+  - `"percentage"`: For data bounded between 0 and 100 (e.g., percentages, rates)
+  - `"positive"`: For strictly positive data (uses log transformation)
+  - `"boxcox"`: Applies Box-Cox transformation with automatically fitted λ parameter
+- `values::Vector{F}`: The input data values used to fit transformation parameters and determine offset
+
+# Returns
+A tuple `(forward_transform, inverse_transform)` where:
+- `forward_transform`: Function that transforms data from original scale to transformed scale
+- `inverse_transform`: Function that transforms data from transformed scale back to original scale
+
+# Transformation Details
+
+## Percentage Transformation
+- **Use case**: Data bounded between 0 and 100 (percentages, rates)
+- **Forward**: `y ↦ logit((y + offset) / 100)`
+- **Inverse**: `y ↦ max(logistic(y) * 100 - offset, 0)`
+- **Note**: Uses logit/logistic to map [0,100] to (-∞,∞) and back
+
+## Positive Transformation
+- **Use case**: Strictly positive continuous data
+- **Forward**: `y ↦ log(y + offset)`
+- **Inverse**: `y ↦ max(exp(y) - offset, 0)`
+- **Note**: Log transformation for positive data with offset for numerical stability
+
+## Box-Cox Transformation
+- **Use case**: General purpose transformation for positive data
+- **Forward**: `y ↦ BoxCox_λ(y + offset)` where λ is automatically fitted
+- **Inverse**: Custom inverse function handling edge cases for numerical stability
+- **Note**: Automatically determines optimal λ parameter via maximum likelihood
+
+# Offset Calculation
+An offset is automatically calculated using `_get_offet(values)`:
+- If minimum value is 0: offset = (minimum positive value) / 2
+- Otherwise: offset = 0
+- Purpose: Ensures numerical stability and handles boundary cases
+
+# Examples
+```julia
+# Percentage data (0-100 range)
+values = [10.5, 25.3, 67.8, 89.2]
+forward, inverse = get_transformations("percentage", values)
+transformed = forward.(values)
+recovered = inverse.(transformed)
+
+# Strictly positive data
+values = [1.2, 3.4, 8.9, 15.6]
+forward, inverse = get_transformations("positive", values)
+
+# General positive data with automatic Box-Cox fitting
+values = [0.1, 0.5, 2.3, 5.7, 12.1]
+forward, inverse = get_transformations("boxcox", values)
+```
+
+# Throws
+- `AssertionError`: If `transform_name` is not one of the supported transformation types
+- `AssertionError`: Via `_get_offet` if `values` is empty or contains negative values
+
+# See Also
+- [`_get_offet`](@ref): Calculates the offset value for numerical stability
+- [`_inv_boxcox`](@ref): Handles inverse Box-Cox transformation with edge case handling
+"""
 function get_transformations(
         transform_name::String, values::Vector{F}) where {F <: Real}
-    offset = minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability
+    offset = _get_offet(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
-        return (y -> logit(y / 100), y -> logistic(y) * 100)
+        return (y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))
     elseif transform_name == "positive"
         @info "Using positive transformation with offset = $offset"
-        return (y -> log(y + offset), y -> max(exp(y) - offset, 0.0))
+        return (y -> log(y + offset), y -> max(exp(y) - offset, zero(F)))
     elseif transform_name == "boxcox"
         max_values = maximum(values)
         bc = fit(BoxCoxTransformation, values .+ offset) # Fit Box-Cox transformation
