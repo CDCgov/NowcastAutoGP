@@ -43,10 +43,10 @@ Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 
 ## Documentation
 
-📖 **[Latest Documentation](https://cdcgov.github.io/NowcastAutoGP.jl/)**
+📖 **[Latest Documentation](https://cdcgov.github.io/NowcastAutoGP/dev/)**
 
-- **[Getting Started Tutorial](https://cdcgov.github.io/NowcastAutoGP.jl/vignettes/tutorial.html)**: Complete example using NHSN COVID-19 hospitalization data
-- **[API Reference](https://cdcgov.github.io/NowcastAutoGP.jl/api.html)**: Detailed function documentation
+- **[Getting Started Tutorial](https://cdcgov.github.io/NowcastAutoGP/dev/vignettes/tutorial/)**: Complete example using NHSN COVID-19 hospitalization data
+- **[API Reference](https://cdcgov.github.io/NowcastAutoGP/dev/api/)**: Detailed function documentation
 
 ## Related documents
 
