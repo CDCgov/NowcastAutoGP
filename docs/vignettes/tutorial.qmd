@@ -5,7 +5,9 @@ author: "CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)"
 engine: julia
 julia:
   exeflags: ["--project=./..", "--threads=8"]
-format: gfm
+format: 
+  commonmark:
+    variant: +tex_math_dollars+pipe_tables
 execute:
   echo: true
   warning: false
