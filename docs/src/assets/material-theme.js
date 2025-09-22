@@ -285,8 +285,41 @@ document.addEventListener('DOMContentLoaded', function() {
         addLoadingAnimations();
         enhanceSearch();
         addFocusIndicators();
+        initSyntaxHighlighting();
 
         console.log('Material Design theme enhancements loaded');
+    }
+
+    // Initialize syntax highlighting
+    function initSyntaxHighlighting() {
+        // Load and initialize Highlight.js
+        if (typeof require !== 'undefined') {
+            require(['https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js'], function(hljs) {
+                // Configure Highlight.js
+                hljs.configure({
+                    languages: ['julia', 'javascript', 'python', 'bash', 'css', 'html', 'json', 'markdown']
+                });
+                
+                // Highlight all code blocks
+                hljs.highlightAll();
+                
+                console.log('Syntax highlighting initialized');
+            });
+        } else {
+            // Fallback: load via script tag if require.js is not available
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+            script.onload = function() {
+                if (window.hljs) {
+                    window.hljs.configure({
+                        languages: ['julia', 'javascript', 'python', 'bash', 'css', 'html', 'json', 'markdown']
+                    });
+                    window.hljs.highlightAll();
+                    console.log('Syntax highlighting initialized (fallback)');
+                }
+            };
+            document.head.appendChild(script);
+        }
     }
 
     // Run initialization

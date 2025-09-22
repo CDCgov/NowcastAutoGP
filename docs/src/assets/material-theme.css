@@ -222,6 +222,17 @@ body {
   padding: 0;
 }
 
+/* Fix code size in headers */
+#documenter h1 code,
+#documenter h2 code,
+#documenter h3 code,
+#documenter h4 code,
+#documenter h5 code,
+#documenter h6 code {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
 /* Links */
 #documenter a {
   color: var(--md-primary-color);
@@ -425,6 +436,100 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--md-on-surface-variant);
+}
+
+/* Syntax highlighting for code blocks */
+/* Material Design inspired syntax highlighting */
+#documenter .hljs {
+  color: var(--md-on-surface);
+  background: transparent;
+}
+
+/* Keywords */
+#documenter .hljs-keyword,
+#documenter .hljs-selector-tag,
+#documenter .hljs-literal,
+#documenter .hljs-section,
+#documenter .hljs-link {
+  color: #1976d2; /* Material blue */
+  font-weight: 500;
+}
+
+/* Strings */
+#documenter .hljs-string,
+#documenter .hljs-title,
+#documenter .hljs-name,
+#documenter .hljs-type,
+#documenter .hljs-attribute,
+#documenter .hljs-symbol,
+#documenter .hljs-bullet,
+#documenter .hljs-addition,
+#documenter .hljs-variable,
+#documenter .hljs-template-tag,
+#documenter .hljs-template-variable {
+  color: #388e3c; /* Material green */
+}
+
+/* Numbers */
+#documenter .hljs-number,
+#documenter .hljs-quote,
+#documenter .hljs-deletion,
+#documenter .hljs-meta {
+  color: #f57c00; /* Material orange */
+}
+
+/* Comments */
+#documenter .hljs-comment {
+  color: #757575; /* Material grey */
+  font-style: italic;
+}
+
+/* Function names and identifiers */
+#documenter .hljs-function,
+#documenter .hljs-class,
+#documenter .hljs-title.function_,
+#documenter .hljs-title.class_,
+#documenter .hljs-built_in {
+  color: #6a1b9a; /* Material purple */
+}
+
+/* Operators and punctuation */
+#documenter .hljs-operator,
+#documenter .hljs-regexp,
+#documenter .hljs-selector-attr,
+#documenter .hljs-selector-class,
+#documenter .hljs-selector-id,
+#documenter .hljs-selector-pseudo {
+  color: #d32f2f; /* Material red */
+}
+
+/* Julia-specific highlighting */
+#documenter .hljs-julia .hljs-keyword {
+  color: #1976d2;
+  font-weight: 600;
+}
+
+#documenter .hljs-julia .hljs-string {
+  color: #388e3c;
+}
+
+#documenter .hljs-julia .hljs-number {
+  color: #f57c00;
+}
+
+#documenter .hljs-julia .hljs-comment {
+  color: #757575;
+  font-style: italic;
+}
+
+#documenter .hljs-julia .hljs-function {
+  color: #6a1b9a;
+  font-weight: 500;
+}
+
+#documenter .hljs-julia .hljs-built_in {
+  color: #6a1b9a;
+  font-weight: 500;
 }
 
 /* Print styles */
