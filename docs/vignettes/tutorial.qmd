@@ -5,7 +5,7 @@ author: "CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)"
 engine: julia
 julia:
   exeflags: ["--project=./..", "--threads=8"]
-format: 
+format:
   commonmark:
     variant: +tex_math_dollars+pipe_tables
 execute:
@@ -18,7 +18,7 @@ execute:
 
 # Introduction
 
-This tutorial demonstrates how to use `NowcastAutoGP` for epidemiological forecasting - making forecasts of future disease activity despite reporting delays making the latest data unreliable. 
+This tutorial demonstrates how to use `NowcastAutoGP` for epidemiological forecasting - making forecasts of future disease activity despite reporting delays making the latest data unreliable.
 This is a common challenge in public health surveillance where case reports arrive with delays.
 In this tutorial, we will want to forecast future weekly hospital admissions with confirmed Covid diagnosis despite uncertainty around the eventual value of recent admissions.
 The reason for the uncertainty is that despite _eventually_ having a record of severe cases arriving in a given week (we call this the reference date), at any given reporting week (we call this the report date) recent reference dates will not have complete data.
@@ -28,6 +28,7 @@ The reason for the uncertainty is that despite _eventually_ having a record of s
 Nowcasting is a form of forecasting aimed at the question: *"What will be the eventual value of my time series, given recent reporting?"*
 
 From our perspective common applications are:
+
 - COVID-19/Influenza/RSV hospital admissions
 - COVID-19/Influenza/RSV Emergency department visits
 - Real-time monitoring of reproductive numbers $R_t$
@@ -48,10 +49,10 @@ $$
 \mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
 $$
 
-with the nowcast estimate for the 
+with the nowcast estimate for the
 
 $$
-\mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T]) 
+\mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T])
 $$
 
 This kind of forecasting is particularly convenient for `AutoGP`: we can use the standard end-to-end inference for the confirmed data and then batch over the sampled nowcasts using incremental inference.
@@ -90,7 +91,7 @@ CairoMakie.activate!(type = "png")
 
 ## Loading Surveillance Data
 
-We are going to demonstrate using `NowcastAutoGP` for forecasting the CDC’s National Healthcare Safety Network (NHSN) reported Covid hospitalisations. 
+We are going to demonstrate using `NowcastAutoGP` for forecasting the CDC’s National Healthcare Safety Network (NHSN) reported Covid hospitalisations.
 We stored a vintaged data set locally.
 
 ```{julia}
@@ -100,7 +101,7 @@ nhsn_vintage_covid_data = CSV.read(datapath, DataFrame)
 
 # Add time_index column for plotting (1 = minimum date, 2 = next date, etc.)
 unique_dates = sort(unique(nhsn_vintage_covid_data.reference_date))
-d2index(d) = (d - minimum(unique_dates)).value 
+d2index(d) = (d - minimum(unique_dates)).value
 
 # Add time_index column using transform!
 
@@ -173,7 +174,7 @@ We know that some recent periods have had bad reporting for NHSN, so we exclude 
 
 ```{julia}
 #| output: true
-exclusion_periods = [(Date(2024, 5, 1), Date(2024, 6, 1)), 
+exclusion_periods = [(Date(2024, 5, 1), Date(2024, 6, 1)),
     (Date(2024, 10, 1), Date(2024, 11, 15))]
 
 training_data = let
@@ -204,16 +205,16 @@ function fit_on_data(report_date;
     n_redact,
     max_ahead = 8,
     date_data = date_data,
-    n_particles = 24, 
+    n_particles = 24,
     smc_data_proportion = 0.1,
     n_mcmc = 50, n_hmc = 50)
-    
+
     # Dates to forecast
     forecast_dates = [maximum(date_data.reference_date) + Week(k) for k = 0:max_ahead]
 
     transformation, inv_transformation = get_transformations("boxcox", date_data.confirm)
     data_to_fit = create_transformed_data(date_data.reference_date[1:(end-n_redact)], date_data.confirm[1:(end-n_redact)]; transformation)
-    model = make_and_fit_model(data_to_fit; 
+    model = make_and_fit_model(data_to_fit;
                                 n_particles,
                                 smc_data_proportion,
                                 n_mcmc, n_hmc)
@@ -224,10 +225,10 @@ end
 We also give a handy plotting utility for plotting our results.
 
 ```{julia}
-function plot_with_forecasts(forecasts, title::String; 
+function plot_with_forecasts(forecasts, title::String;
                             n_ahead,
                             selected_dates,
-                            colors = colors, 
+                            colors = colors,
                             covid_data = nhsn_vintage_covid_data,
                             plot_start_date = plot_start_date,
                             plot_end_date = plot_end_date,
@@ -296,7 +297,7 @@ end
 
 ### Approach 1: Forecasting naively
 
-Naively, we could just use `AutoGP` on the latest reported data without considering revisions. 
+Naively, we could just use `AutoGP` on the latest reported data without considering revisions.
 This will be biased because we know that typically the most recent data will be revised upwards, but represents a common error when using this data stream.
 
 
@@ -328,7 +329,7 @@ When we plot we see that the unrevised data consistently underestimates the even
 
 ```{julia}
 #| output: true
-plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different Report Dates (naive)"; 
+plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different Report Dates (naive)";
                         n_ahead = 4,
                             selected_dates = selected_dates,
     )
@@ -336,7 +337,7 @@ plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different
 
 ### Approach 2: Removing uncertain data
 
-We note that the problem is _mainly_ with the most recent week of hospitalisation reports. 
+We note that the problem is _mainly_ with the most recent week of hospitalisation reports.
 Therefore, another strategy could be to simply redact that week but otherwise leave out forecasting untouched.
 
 ```{julia}
@@ -365,7 +366,7 @@ This looks improved but the forecasts have quite large prediction intervals (we 
 
 ```{julia}
 #| output: true
-plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from Different Report Dates (Leave out last week)"; 
+plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from Different Report Dates (Leave out last week)";
                             n_ahead = 4,
                             selected_dates = selected_dates,
     )
@@ -374,11 +375,11 @@ plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from 
 ### Approach 3: Forecasting with a simple nowcast
 
 Now lets consider a really simple nowcasting model.
-Over recent vintages we notice that the most recent week gets revised significantly but other weeks are fairly stable. 
+Over recent vintages we notice that the most recent week gets revised significantly but other weeks are fairly stable.
 Therefore, we fit the ratio of last weeks report to last weeks eventual reported to a LogNormal. The MLE fit for this was LogNormal(logmean = 0.1, logstd = 0.027).
 
 In the following example, for each vintage we first fit to all the data except the most recent week (`n_redact = 1`).
-Second, we sample a multiplier for the most recent week from the LogNormal distribution 100 times. 
+Second, we sample a multiplier for the most recent week from the LogNormal distribution 100 times.
 Third, we use `forecast_with_nowcasts` to batch 20 forecasts per nowcast signal ontop of the inference done in step one.
 
 This is a very simple nowcasting approach!
@@ -401,7 +402,7 @@ nowcast_forecasts_by_reference_date = map(selected_dates) do report_date
     # Simple nowcast on most recent data where we suspect significant revisions
     nowcast_samples = [[date_data.confirm[end] * exp(0.1 + randn() * 0.027)] for _ = 1:n_nowcast_samples]
 
-    nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]]; 
+    nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
         transformation = transformation)
 
     forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
@@ -419,7 +420,7 @@ We see that this significantly improves the forecasting visually.
 
 ```{julia}
 #| output: true
-plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Different Report Dates (Simple Nowcast)"; 
+plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Different Report Dates (Simple Nowcast)";
                             n_ahead = 4,
                             selected_dates = selected_dates,
     )
@@ -428,9 +429,9 @@ plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Differe
 ## Scoring
 
 To evaluate the quality of our different forecasting approaches, we use proper scoring rules.
-A proper scoring rule is a function that assigns a numerical score to a probabilistic forecast, with the property that the score is optimized (in expectation) when the forecast represents the forecaster's true belief about the future outcome.
+A proper scoring rule is a function that assigns a numerical score to a probabilistic forecast, with the property that the score is optimized (in expectation) when the forecast distribution matches the true future data distribution.
 
-The **Continuous Ranked Probability Score (CRPS)** is a proper scoring rule that generalizes the absolute error to probabilistic forecasts. For a forecast distribution $F$ and observed outcome $y$, the CRPS is defined as:
+The **Continuous Ranked Probability Score (CRPS)** is a proper scoring rule that generalizes the absolute error to probabilistic forecasts. For a forecast distribution $F(x) = P(X \leq x)$ and observed outcome $y$, the CRPS is defined as:
 
 $$\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]$$
 
@@ -440,20 +441,20 @@ For a forecast ensemble $X = \{X_1, X_2, \ldots, X_n\}$, this can be estimated u
 
 **Note:** For production forecasting evaluation, we recommend using the comprehensive [`scoringutils`](https://epiforecasts.io/scoringutils/) R package, which provides robust implementations of proper scoring rules, forecast evaluation diagnostics, and visualization tools specifically designed for epidemiological forecasting.
 
-Let's implement a simple CRPS function and compare our three forecasting approaches: 
+Let's implement a simple CRPS function and functions for getting the mean CRPS score over reporting dates and forecast horizons in order to compare our three forecasting approaches:
 
 ```{julia}
 function crps(y::Real, X::Vector{<:Real})
     n = length(X)
-    
+
     # First term: E|X - y|
     term1 = mean(abs.(X .- y))
-    
+
     # Second term : E|X_1 - X_2|
     # Calculate all ordered pairwise differences
-    ordered_pairwise_diffs = [abs(X[i] - X[j]) for i in 1:n for j in (i+1):n] 
+    ordered_pairwise_diffs = [abs(X[i] - X[j]) for i in 1:n for j in (i+1):n]
     term2 = mean(ordered_pairwise_diffs) #Average value is same as going over all combinations and div by n^2 due to zero diagonal and permutation symmetry
-    
+
     # CRPS = E|X - y| - 0.5 * E|X_1 - X_2|
     return term1 - 0.5 * term2
 end
@@ -511,7 +512,7 @@ ax = Axis(fig[1, 1],
 
 # Create bar plot with different colors based on performance
 bar_colors = [ratio > 1 ? :red : ratio == 1 ? :green : :blue for ratio in score_ratios]
-barplot!(ax, 1:3, score_ratios, 
+barplot!(ax, 1:3, score_ratios,
     color = bar_colors,
     alpha = 0.7,
     strokewidth = 2,
@@ -519,7 +520,7 @@ barplot!(ax, 1:3, score_ratios,
 
 # Add value labels on top of bars
 for (i, ratio) in enumerate(score_ratios)
-    text!(ax, i, ratio + 0.02, text = string(round(ratio, digits=2)), 
+    text!(ax, i, ratio + 0.02, text = string(round(ratio, digits=2)),
           align = (:center, :bottom), fontsize = 12)
 end
 
