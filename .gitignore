@@ -383,3 +383,6 @@ Manifest.toml
 development.md
 doc_development.md
 test_development.md
+
+# Tutorial images
+!docs/src/vignettes/tutorial_files/figure-commonmark/*.png
