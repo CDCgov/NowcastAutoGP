@@ -1,6 +1,6 @@
 # NowcastAutoGP.jl
 
-[![][docs-stable-img]][docs-stable-url]
+[![][docs-stable-img]][docs-stable-url] [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 *Centers for Disease Control and Prevention • Center for Forecasting and Outbreak Analytics*
 

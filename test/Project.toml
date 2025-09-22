@@ -1,4 +1,5 @@
 [deps]
+Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 AutoGP = "6eb593e7-dfb4-4e48-b98e-d7222cdf0053"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
