@@ -547,6 +547,9 @@ function score_all_forecasts(latestdata, forecasts; max_horizon = 4, data_transf
 end
 ```
 
+We can apply the scoring to each forecasting method, leaving out the
+most recent forecasts (where we don’t have all the data to score them).
+
 ``` julia
 most_recent_report_date = maximum(selected_dates)
 latestdata = @filter(nhsn_vintage_covid_data, report_date == !!most_recent_report_date)
@@ -555,6 +558,9 @@ scores = map([naive_forecasts_by_reference_date, leave_out_last_forecasts_by_ref
     score_all_forecasts(latestdata, F[1:(end-2)]; data_transform = identity)
 end
 ```
+
+Then we can plot these scores as score ratios relative to the simple
+nowcasting approach.
 
 ``` julia
 # Calculate score ratios compared to simple nowcast (baseline)
