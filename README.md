@@ -6,8 +6,6 @@
 
 **Automated Gaussian Process model discovery for time series data with significant on-going revisions**
 
-**General disclaimer** This repository was created for use by CDC programs to collaborate on public health related projects in support of the [CDC mission](https://www.cdc.gov/about/cdc/#cdc_about_cio_mission-our-mission).  GitHub is not hosted by the CDC, but is a third party website used by CDC and its partners to share information and collaborate on software. CDC use of GitHub does not imply an endorsement of any one particular service, product, or enterprise.
-
 ## About
 
 **NowcastAutoGP.jl** is a Julia package for combining **nowcasting** of epidemiological time series data with **forecasting** using an ensemble of Gaussian process (GP) models. The package was developed for the [CDC Center for Forecasting and Outbreak Analytics (CFA)](https://www.cdc.gov/forecasting/index.html) to support real-time situational awareness and epidemiological forecasting.
@@ -47,6 +45,10 @@ Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 
 - **[Getting Started Tutorial](https://cdcgov.github.io/NowcastAutoGP/dev/vignettes/tutorial/)**: Complete example using NHSN COVID-19 hospitalization data
 - **[API Reference](https://cdcgov.github.io/NowcastAutoGP/dev/api/)**: Detailed function documentation
+
+## General disclaimer
+
+This repository was created for use by CDC programs to collaborate on public health related projects in support of the [CDC mission](https://www.cdc.gov/about/cdc/#cdc_about_cio_mission-our-mission).  GitHub is not hosted by the CDC, but is a third party website used by CDC and its partners to share information and collaborate on software. CDC use of GitHub does not imply an endorsement of any one particular service, product, or enterprise.
 
 ## Related documents
 
