@@ -111,4 +111,4 @@ published through the [CDC web site](http://www.cdc.gov).
 Please refer to [CDC's Template Repository](https://github.com/CDCgov/template) for more information about [contributing to this repository](https://github.com/CDCgov/template/blob/main/CONTRIBUTING.md), [public domain notices and disclaimers](https://github.com/CDCgov/template/blob/main/DISCLAIMER.md), and [code of conduct](https://github.com/CDCgov/template/blob/main/code-of-conduct.md).
 
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
-[docs-stable-url]: https://cdcgov.github.io/NowcastAutoGP.jl/
+[docs-stable-url]: https://cdcgov.github.io/NowcastAutoGP/dev/
