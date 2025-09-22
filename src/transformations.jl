@@ -1,5 +1,5 @@
 """
-    get_transformations(transform_name::String, values::Vector{F}) where {F <: Real}
+    _inv_boxcox(λ::Real, offset::F, max_values) where {F}
 
 Internal function to compute the inverse Box-Cox transformation with edge case handling.
 """
@@ -44,11 +44,11 @@ function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
 end
 
 """
-    _get_offet(values::Vector{F}) where {F <: Real}
+    _get_offset(values::Vector{F}) where {F <: Real}
 
 Internal function to compute an offset for transformations to ensure numerical stability.
 """
-function _get_offet(values::Vector{F}) where {F <: Real}
+function _get_offset(values::Vector{F}) where {F <: Real}
     @assert !isempty(values) "Values array must not be empty"
     @assert all(values .>= zero(F)) "All values must be non-negative for the selected transformations"
     return minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability

@@ -7,7 +7,7 @@
 
 ## About NowcastAutoGP.jl
 
-**NowcastAutoGP.jl** is a Julia package for combining **nowcasting** of epidemiological time series data with **forecasting** using an ensemble of Gaussian process (GP) models. 
+**NowcastAutoGP.jl** is a Julia package for combining **nowcasting** of epidemiological time series data with **forecasting** using an ensemble of Gaussian process (GP) models.
 The package was developed for the [CDC Center for Forecasting and Outbreak Analytics (CFA)](https://www.cdc.gov/forecasting/index.html) to support real-time situational awareness and epidemiological forecasting.
 
 The basic idea behind this package is to use the incremental fitting capabilities of [`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) to batch forecasts over probababilistic nowcasts of recent data points. In this way, `NowcastAutoGP.jl` is able to account for the uncertainty in recent data points that are still being revised, while also leveraging the flexibility and scalability of Gaussian processes for forecasting.

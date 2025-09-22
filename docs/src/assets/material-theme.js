@@ -299,10 +299,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 hljs.configure({
                     languages: ['julia', 'javascript', 'python', 'bash', 'css', 'html', 'json', 'markdown']
                 });
-                
+
                 // Highlight all code blocks
                 hljs.highlightAll();
-                
+
                 console.log('Syntax highlighting initialized');
             });
         } else {
