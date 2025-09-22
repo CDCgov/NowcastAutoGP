@@ -1,3 +1,8 @@
+"""
+    _inv_boxcox(λ::Real, offset::F, max_values) where {F}
+
+Internal function to compute the inverse Box-Cox transformation with edge case handling.
+"""
 function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
     function _inv(y)
         lambda_y_plus_1 = λ * y + one(F)
@@ -38,7 +43,12 @@ function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
     return _inv
 end
 
-function _get_offet(values::Vector{F}) where {F <: Real}
+"""
+    _get_offset(values::Vector{F}) where {F <: Real}
+
+Internal function to compute an offset for transformations to ensure numerical stability.
+"""
+function _get_offset(values::Vector{F}) where {F <: Real}
     @assert !isempty(values) "Values array must not be empty"
     @assert all(values .>= zero(F)) "All values must be non-negative for the selected transformations"
     return minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability
@@ -113,12 +123,12 @@ forward, inverse = get_transformations("boxcox", values)
 - `AssertionError`: Via `_get_offet` if `values` is empty or contains negative values
 
 # See Also
-- [`_get_offet`](@ref): Calculates the offset value for numerical stability
+- [`_get_offset`](@ref): Calculates the offset value for numerical stability
 - [`_inv_boxcox`](@ref): Handles inverse Box-Cox transformation with edge case handling
 """
 function get_transformations(
         transform_name::String, values::Vector{F}) where {F <: Real}
-    offset = _get_offet(values)
+    offset = _get_offset(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))

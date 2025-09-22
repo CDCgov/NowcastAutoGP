@@ -90,7 +90,7 @@ function forecast_with_nowcasts(
             base_model, forecast_dates, forecast_draws_per_nowcast;
             inv_transformation = inv_transformation)
 
-        # Clean up the added nowcast data to restore the model to its original state
+        # Clean up the added nowcast data to restore the model data to its original state
         AutoGP.remove_data!(base_model, nowcast.ds)
 
         return scenario_forecasts
