@@ -16,7 +16,7 @@ makedocs(
         "Getting started" => "vignettes/tutorial.md",
         "API Reference" => "api.md",
     ],
-    clean = false,
+    clean = true,
     checkdocs = :exports,
     remotes = nothing
 )
