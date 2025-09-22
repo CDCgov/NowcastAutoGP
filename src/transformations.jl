@@ -123,12 +123,12 @@ forward, inverse = get_transformations("boxcox", values)
 - `AssertionError`: Via `_get_offet` if `values` is empty or contains negative values
 
 # See Also
-- [`_get_offet`](@ref): Calculates the offset value for numerical stability
+- [`_get_offset`](@ref): Calculates the offset value for numerical stability
 - [`_inv_boxcox`](@ref): Handles inverse Box-Cox transformation with edge case handling
 """
 function get_transformations(
         transform_name::String, values::Vector{F}) where {F <: Real}
-    offset = _get_offet(values)
+    offset = _get_offset(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))
