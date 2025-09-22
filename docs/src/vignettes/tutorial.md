@@ -52,15 +52,15 @@ example by sampling from the posterior distribution. Then we can improve
 our `AutoGP` forecasting for the *eventual* value on reference date
 $f > T$ by replacing our “naive” forecast distribution:
 
-$$
+```math
 \mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
-$$
+```
 
 with the nowcast estimate for the
 
-$$
+```math
 \mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T]) 
-$$
+```
 
 This kind of forecasting is particularly convenient for `AutoGP`: we can
 use the standard end-to-end inference for the confirmed data and then
@@ -375,8 +375,7 @@ plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different
     )
 ```
 
-<img src="tutorial_files/figure-commonmark/cell-10-output-1.png"
-width="1000" height="700" />
+![This figure shows nowcasting problem](../assets/tutorial/cell-10-output-1.png)
 
 ### Approach 2: Removing uncertain data
 
@@ -416,8 +415,7 @@ plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from 
     )
 ```
 
-<img src="tutorial_files/figure-commonmark/cell-12-output-1.png"
-width="1000" height="700" />
+![Forecasts from Different Report Dates (Leave out last week)](../assets/tutorial/cell-12-output-1.png)
 
 ### Approach 3: Forecasting with a simple nowcast
 
@@ -478,8 +476,7 @@ plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Differe
     )
 ```
 
-<img src="tutorial_files/figure-commonmark/cell-14-output-1.png"
-width="1000" height="700" />
+![Forecasts from Different Report Dates (Simple Nowcast)](../assets/tutorial/cell-14-output-1.png)
 
 ## Scoring
 
@@ -494,7 +491,9 @@ rule that generalizes the absolute error to probabilistic forecasts. For
 a forecast distribution $F$ and observed outcome $y$, the CRPS is
 defined as:
 
-$$\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]$$
+```math
+\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]
+```
 
 where the first term measures the distance between the forecast ensemble
 and the observation, and the second term measures the spread of the
@@ -606,9 +605,8 @@ resize_to_layout!(fig)
 fig
 ```
 
-<img src="tutorial_files/figure-commonmark/cell-17-output-1.png"
-width="600" height="400"
-alt="Score ratios comparison (relative to simple nowcast baseline)" />
+![Score ratios comparison (relative to simple nowcast baseline)](../assets/tutorial/cell-17-output-1.png)
+
 
 ### Results and Interpretation
 
