@@ -2,7 +2,7 @@
 /* Based on Material Design 3 (Material You) principles */
 
 :root {
-  /* Material Design 3 Color Tokens */
+  /* Material Design 3 Color Tokens - Light Mode */
   --md-primary-color: #1976d2;
   --md-primary-variant: #1565c0;
   --md-secondary-color: #03dac6;
@@ -34,6 +34,40 @@
   --md-border-radius-md: 12px;
   --md-border-radius-lg: 16px;
   --md-border-radius-xl: 28px;
+}
+
+/* Dark mode color tokens */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Material Design 3 Color Tokens - Dark Mode */
+    --md-primary-color: #90caf9;
+    --md-primary-variant: #64b5f6;
+    --md-secondary-color: #80deea;
+    --md-secondary-variant: #4dd0e1;
+    --md-background: #121212;
+    --md-surface: #1e1e1e;
+    --md-surface-variant: #2a2a2a;
+    --md-on-surface: #e6e1e5;
+    --md-on-surface-variant: #c7c5d0;
+    --md-outline: #938f99;
+    --md-outline-variant: #49454f;
+  }
+}
+
+/* Manual dark mode class support */
+.dark-mode {
+  /* Material Design 3 Color Tokens - Dark Mode */
+  --md-primary-color: #90caf9;
+  --md-primary-variant: #64b5f6;
+  --md-secondary-color: #80deea;
+  --md-secondary-variant: #4dd0e1;
+  --md-background: #121212;
+  --md-surface: #1e1e1e;
+  --md-surface-variant: #2a2a2a;
+  --md-on-surface: #e6e1e5;
+  --md-on-surface-variant: #c7c5d0;
+  --md-outline: #938f99;
+  --md-outline-variant: #49454f;
 }
 
 /* Import Google Fonts */
@@ -326,34 +360,37 @@ body {
 
 #documenter .admonition.is-info {
   border-left: 4px solid #2196f3;
-  background-color: #e3f2fd;
+  background-color: var(--md-surface-variant);
 }
 
 #documenter .admonition.is-warning {
   border-left: 4px solid #ff9800;
-  background-color: #fff3e0;
+  background-color: var(--md-surface-variant);
 }
 
 #documenter .admonition.is-danger {
   border-left: 4px solid #f44336;
-  background-color: #ffebee;
+  background-color: var(--md-surface-variant);
 }
 
 #documenter .admonition.is-success {
   border-left: 4px solid #4caf50;
-  background-color: #e8f5e8;
+  background-color: var(--md-surface-variant);
 }
 
 #documenter .admonition-header {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--md-surface);
+  border-bottom: 1px solid var(--md-outline-variant);
   padding: 12px 16px;
   font-weight: 500;
   display: flex;
   align-items: center;
+  color: var(--md-on-surface);
 }
 
 #documenter .admonition-body {
   padding: 16px;
+  color: var(--md-on-surface);
 }
 
 /* Search */
@@ -451,7 +488,7 @@ body {
 #documenter .hljs-literal,
 #documenter .hljs-section,
 #documenter .hljs-link {
-  color: #1976d2; /* Material blue */
+  color: var(--md-primary-color);
   font-weight: 500;
 }
 
@@ -467,7 +504,7 @@ body {
 #documenter .hljs-variable,
 #documenter .hljs-template-tag,
 #documenter .hljs-template-variable {
-  color: #388e3c; /* Material green */
+  color: #4caf50; /* Consistent green across themes */
 }
 
 /* Numbers */
@@ -475,12 +512,12 @@ body {
 #documenter .hljs-quote,
 #documenter .hljs-deletion,
 #documenter .hljs-meta {
-  color: #f57c00; /* Material orange */
+  color: #ff9800; /* Consistent orange across themes */
 }
 
 /* Comments */
 #documenter .hljs-comment {
-  color: #757575; /* Material grey */
+  color: var(--md-on-surface-variant);
   font-style: italic;
 }
 
@@ -490,7 +527,7 @@ body {
 #documenter .hljs-title.function_,
 #documenter .hljs-title.class_,
 #documenter .hljs-built_in {
-  color: #6a1b9a; /* Material purple */
+  color: #9c27b0; /* Consistent purple across themes */
 }
 
 /* Operators and punctuation */
@@ -500,35 +537,35 @@ body {
 #documenter .hljs-selector-class,
 #documenter .hljs-selector-id,
 #documenter .hljs-selector-pseudo {
-  color: #d32f2f; /* Material red */
+  color: #f44336; /* Consistent red across themes */
 }
 
 /* Julia-specific highlighting */
 #documenter .hljs-julia .hljs-keyword {
-  color: #1976d2;
+  color: var(--md-primary-color);
   font-weight: 600;
 }
 
 #documenter .hljs-julia .hljs-string {
-  color: #388e3c;
+  color: #4caf50;
 }
 
 #documenter .hljs-julia .hljs-number {
-  color: #f57c00;
+  color: #ff9800;
 }
 
 #documenter .hljs-julia .hljs-comment {
-  color: #757575;
+  color: var(--md-on-surface-variant);
   font-style: italic;
 }
 
 #documenter .hljs-julia .hljs-function {
-  color: #6a1b9a;
+  color: #9c27b0;
   font-weight: 500;
 }
 
 #documenter .hljs-julia .hljs-built_in {
-  color: #6a1b9a;
+  color: #9c27b0;
   font-weight: 500;
 }
 
