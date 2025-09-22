@@ -28,7 +28,7 @@ using Pkg
 Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 ```
 
-## Example: Forecasting NHSN COVID-19 Hospitalizations with NowcastingAutoGP.jl and nowcasting
+## Example: Forecasting NHSN COVID-19 Hospitalizations with NowcastAutoGP.jl and nowcasting
 
 `NowcastAutoGP.jl` allows the user to incorporate nowcasting with ensemble Gaussian process (GP) forecasting provided by `AutoGP.jl`. In the example below, we show forecasting with the "naive" belief that the most recent reported data is accurate and final, compared to forecasting that incorporates simple nowcasting that accounts for a reporting multiplicative factor based on historical reporting patterns.
 
