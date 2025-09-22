@@ -1,12 +1,52 @@
-# CDCgov GitHub Organization Open Source Project Template
+# NowcastAutoGP.jl
 
-**Template for clearance: This project serves as a template to aid projects in starting up and moving through clearance procedures. To start, create a new repository and implement the required [open practices](open_practices.md), train on and agree to adhere to the organization's [rules of behavior](rules_of_behavior.md), and [send a request through the create repo form](https://forms.office.com/Pages/ResponsePage.aspx?id=aQjnnNtg_USr6NJ2cHf8j44WSiOI6uNOvdWse4I-C2NUNk43NzMwODJTRzA4NFpCUk1RRU83RTFNVi4u) using language from this template as a Guide.**
+[![][docs-stable-img]][docs-stable-url]
+
+*Centers for Disease Control and Prevention • Center for Forecasting and Outbreak Analytics*
+
+**Automated Gaussian Process model discovery for time series data with significant on-going revisions**
 
 **General disclaimer** This repository was created for use by CDC programs to collaborate on public health related projects in support of the [CDC mission](https://www.cdc.gov/about/cdc/#cdc_about_cio_mission-our-mission).  GitHub is not hosted by the CDC, but is a third party website used by CDC and its partners to share information and collaborate on software. CDC use of GitHub does not imply an endorsement of any one particular service, product, or enterprise.
 
-## Access Request, Repo Creation Request
+## About
 
-* [CDC GitHub Open Project Request Form](https://forms.office.com/Pages/ResponsePage.aspx?id=aQjnnNtg_USr6NJ2cHf8j44WSiOI6uNOvdWse4I-C2NUNk43NzMwODJTRzA4NFpCUk1RRU83RTFNVi4u) _[Requires a CDC Office365 login, if you do not have a CDC Office365 please ask a friend who does to submit the request on your behalf. If you're looking for access to the CDCEnt private organization, please use the [GitHub Enterprise Cloud Access Request form](https://forms.office.com/Pages/ResponsePage.aspx?id=aQjnnNtg_USr6NJ2cHf8j44WSiOI6uNOvdWse4I-C2NUQjVJVDlKS1c0SlhQSUxLNVBaOEZCNUczVS4u).]_
+**NowcastAutoGP.jl** is a Julia package for combining **nowcasting** of epidemiological time series data with **forecasting** using an ensemble of Gaussian process (GP) models. The package was developed for the [CDC Center for Forecasting and Outbreak Analytics (CFA)](https://www.cdc.gov/forecasting/index.html) to support real-time situational awareness and epidemiological forecasting.
+
+The basic idea is to use the incremental fitting capabilities of [`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) to batch forecasts over probabilistic nowcasts of recent data points. This accounts for uncertainty in recent data points that are still being revised, while leveraging the flexibility and scalability of Gaussian processes for forecasting.
+
+### Key Features
+
+- **Nowcasting integration**: Handles data revision uncertainty in recent time periods
+- **Flexible approach**: Agnostic to the nowcasting method used
+- **Ensemble forecasting**: Uses Gaussian process model discovery for robust predictions
+- **Real-time capable**: Designed for operational epidemiological surveillance
+
+## Installation
+
+```julia
+using Pkg
+Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
+```
+
+## Example: Forecasting NHSN COVID-19 Hospitalizations with NowcastAutoGP.jl and nowcasting
+
+`NowcastAutoGP.jl` allows the user to incorporate nowcasting with ensemble Gaussian process (GP) forecasting provided by `AutoGP.jl`. In the example below, we show forecasting with the "naive" belief that the most recent reported data is accurate and final, compared to forecasting that incorporates simple nowcasting that accounts for a reporting multiplicative factor based on historical reporting patterns.
+
+![Naive forecasting showing underestimation](docs/src/assets/tutorial/cell-10-output-1.png)
+*Naive forecasting consistently underestimates due to reporting delays*
+
+![Forecasts with simple nowcasting](docs/src/assets/tutorial/cell-14-output-1.png)
+*Forecasts incorporating simple nowcasting show improved accuracy*
+
+![Performance comparison](docs/src/assets/tutorial/cell-17-output-1.png)
+*Score ratios demonstrate clear performance improvements with nowcasting*
+
+## Documentation
+
+📖 **[Latest Documentation](https://cdcgov.github.io/NowcastAutoGP/dev/)**
+
+- **[Getting Started Tutorial](https://cdcgov.github.io/NowcastAutoGP/dev/vignettes/tutorial/)**: Complete example using NHSN COVID-19 hospitalization data
+- **[API Reference](https://cdcgov.github.io/NowcastAutoGP/dev/api/)**: Detailed function documentation
 
 ## Related documents
 
@@ -16,10 +56,6 @@
 * [Disclaimer](DISCLAIMER.md)
 * [Contribution Notice](CONTRIBUTING.md)
 * [Code of Conduct](code-of-conduct.md)
-
-## Overview
-
-Describe the purpose of your project. Add additional sections as necessary to help collaborators and potential collaborators understand and use your project.
 
 ## Public Domain Standard Notice
 This repository constitutes a work of the United States Government and is not
@@ -73,3 +109,6 @@ published through the [CDC web site](http://www.cdc.gov).
 
 ## Additional Standard Notices
 Please refer to [CDC's Template Repository](https://github.com/CDCgov/template) for more information about [contributing to this repository](https://github.com/CDCgov/template/blob/main/CONTRIBUTING.md), [public domain notices and disclaimers](https://github.com/CDCgov/template/blob/main/DISCLAIMER.md), and [code of conduct](https://github.com/CDCgov/template/blob/main/code-of-conduct.md).
+
+[docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
+[docs-stable-url]: https://cdcgov.github.io/NowcastAutoGP/dev/
