@@ -28,9 +28,9 @@ using Pkg
 Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 ```
 
-## Example Results
+## Example: Forecasting NHSN COVID-19 Hospitalizations with NowcastingAutoGP.jl and nowcasting
 
-The package demonstrates significant improvements over naive forecasting approaches when dealing with data subject to reporting delays:
+`NowcastAutoGP.jl` allows the user to incorporate nowcasting with ensemble Gaussian process (GP) forecasting provided by `AutoGP.jl`. In the example below, we show forecasting with the "naive" belief that the most recent reported data is accurate and final, compared to forecasting that incorporates simple nowcasting that accounts for a reporting multiplicative factor based on historical reporting patterns.
 
 ![Naive forecasting showing underestimation](docs/src/assets/tutorial/cell-10-output-1.png)
 *Naive forecasting consistently underestimates due to reporting delays*
