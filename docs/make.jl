@@ -16,7 +16,6 @@ makedocs(
         "Getting started" => "vignettes/tutorial.md",
         "API Reference" => "api.md",
     ],
-    # repo = "https://github.com/CDCgov/NowcastAutoGP/",
     clean = false,
     checkdocs = :exports,
     remotes = nothing
