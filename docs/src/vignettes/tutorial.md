@@ -43,6 +43,7 @@ When forecasting a time series
 ```math
 X_T[1:T] = (X_{t,T})_{t=1:T}
 ```
+
 on report date $T$ we split between data on a backwards horizon $D$ where we
 consider older data “confirmed”
 
@@ -63,7 +64,8 @@ forecast the *eventual* time series over the uncertain data period the
 $k$th sample being
 
 ```math
-X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T}```
+X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T}
+```
 
 for example by sampling from the posterior distribution. Then we can improve
 our `AutoGP` forecasting for the *eventual* value on reference date
@@ -73,7 +75,7 @@ $f > T$ by replacing our “naive” forecast distribution:
 \mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
 ```
 
-with the nowcast estimate for the
+with the nowcast estimates for the uncertain data:
 
 ```math
 \mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T])
@@ -624,7 +626,7 @@ The score ratios clearly show the improvement over this tutorial:
 
 1.  **Naive forecasting performs worst** - The score ratio shows that
     naive forecasting is significantly worse than the nowcast baseline
-    (ratio \> 1), demonstrating that using the most recent reported data
+    (ratio > 1), demonstrating that using the most recent reported data
     without any adjustment for reporting delays leads to systematically
     poor forecast accuracy. This approach fails to account for the known
     issue that recent hospitalizations are significantly under-reported.
