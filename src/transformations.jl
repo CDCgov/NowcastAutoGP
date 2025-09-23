@@ -1,3 +1,66 @@
+# AutoGP-compatible transform structs
+"""
+    PercentageTransform{F} <: AutoGP.Transforms.Transform
+
+An AutoGP-compatible transform for percentage data (0-100 range) using logit transformation.
+
+Uses logit((y + offset) / 100) for forward transform and logistic(y) * 100 - offset for inverse.
+"""
+struct PercentageTransform{F <: Real} <: AutoGP.Transforms.Transform
+    offset::F
+end
+
+"""
+    PositiveTransform{F} <: AutoGP.Transforms.Transform
+
+An AutoGP-compatible transform for positive data using log transformation with offset.
+
+Uses log(y + offset) for forward transform and exp(y) - offset for inverse.
+"""
+struct PositiveTransform{F <: Real} <: AutoGP.Transforms.Transform
+    offset::F
+end
+
+"""
+    BoxCoxTransform{F, B} <: AutoGP.Transforms.Transform
+
+An AutoGP-compatible transform for positive data using Box-Cox transformation.
+
+Uses fitted Box-Cox transformation with automatic λ parameter and offset handling.
+"""
+struct BoxCoxTransform{F <: Real, B} <: AutoGP.Transforms.Transform
+    offset::F
+    boxcox::B
+    λ::F
+    max_values::F
+end
+
+# Implement AutoGP.Transforms interface for our custom transforms
+function AutoGP.Transforms.apply(t::PercentageTransform, x)
+    return logit.((x .+ t.offset) ./ 100)
+end
+
+function AutoGP.Transforms.unapply(t::PercentageTransform{F}, y) where {F}
+    return max.(logistic.(y) .* 100 .- t.offset, zero(F))
+end
+
+function AutoGP.Transforms.apply(t::PositiveTransform, x)
+    return log.(x .+ t.offset)
+end
+
+function AutoGP.Transforms.unapply(t::PositiveTransform{F}, y) where {F}
+    return max.(exp.(y) .- t.offset, zero(F))
+end
+
+function AutoGP.Transforms.apply(t::BoxCoxTransform, x)
+    return t.boxcox.(x .+ t.offset)
+end
+
+function AutoGP.Transforms.unapply(t::BoxCoxTransform{F}, y) where {F}
+    inv_func = _inv_boxcox(t.λ, t.offset, t.max_values)
+    return inv_func.(y)
+end
+
 """
     _inv_boxcox(λ::Real, offset::F, max_values) where {F}
 
@@ -55,6 +118,62 @@ function _get_offset(values::Vector{F}) where {F <: Real}
 end
 
 """
+    get_autogp_transform(transform_name::String, values::Vector{F}) where {F <: Real}
+
+Create an AutoGP-compatible transform for the specified transformation type.
+
+This function creates appropriate data transformations compatible with AutoGP's transform system,
+which provides better integration with AutoGP's prediction pipeline and supports transform composition.
+
+# Arguments
+- `transform_name::String`: The name of the transformation to apply. Supported values:
+  - `"percentage"`: For data bounded between 0 and 100 (e.g., percentages, rates)  
+  - `"positive"`: For strictly positive data (uses log transformation)
+  - `"boxcox"`: Applies Box-Cox transformation with automatically fitted λ parameter
+- `values::Vector{F}`: The input data values used to fit transformation parameters and determine offset
+
+# Returns
+An AutoGP.Transforms.Transform object that can be used with AutoGP's apply/unapply functions
+and supports composition with other transforms.
+
+# Examples
+```julia
+# Create AutoGP transform for percentage data
+values = [10.5, 25.3, 67.8, 89.2]
+transform = get_autogp_transform("percentage", values)
+transformed = AutoGP.Transforms.apply(transform, values)
+recovered = AutoGP.Transforms.unapply(transform, transformed)
+
+# Compose with other AutoGP transforms
+log_transform = AutoGP.Transforms.LogTransform()
+combined = [transform, log_transform]
+```
+
+# See Also
+- [`get_transformations`](@ref): Original function-based interface (maintained for compatibility)
+- [`PercentageTransform`](@ref), [`PositiveTransform`](@ref), [`BoxCoxTransform`](@ref): Transform implementations
+"""
+function get_autogp_transform(
+        transform_name::String, values::Vector{F}) where {F <: Real}
+    offset = _get_offset(values)
+    if transform_name == "percentage"
+        @info "Using AutoGP percentage transformation with offset = $offset"
+        return PercentageTransform(offset)
+    elseif transform_name == "positive"
+        @info "Using AutoGP positive transformation with offset = $offset"
+        return PositiveTransform(offset)
+    elseif transform_name == "boxcox"
+        max_values = maximum(values)
+        bc = fit(BoxCoxTransformation, values .+ offset)
+        λ = bc.λ
+        @info "Using AutoGP Box-Cox transformation with λ = $λ and offset = $offset"
+        return BoxCoxTransform(offset, bc, λ, max_values)
+    else
+        throw(AssertionError("Unknown transform_name: $transform_name"))
+    end
+end
+
+"""
     get_transformations(transform_name::String, values::Vector{F}) where {F <: Real}
 
 Return a tuple of transformation and inverse transformation functions for the specified transformation type.
@@ -62,6 +181,9 @@ Return a tuple of transformation and inverse transformation functions for the sp
 This function creates appropriate data transformations for Gaussian Process modeling, where the goal is to
 transform the input data to make it more suitable for modeling (typically more Gaussian-like) and then
 provide the inverse transformation to convert predictions back to the original scale.
+
+**Note**: This function maintains the original function-based interface for backward compatibility.
+For better integration with AutoGP, consider using [`get_autogp_transform`](@ref).
 
 # Arguments
 - `transform_name::String`: The name of the transformation to apply. Supported values:
@@ -123,6 +245,7 @@ forward, inverse = get_transformations("boxcox", values)
 - `AssertionError`: Via `_get_offet` if `values` is empty or contains negative values
 
 # See Also
+- [`get_autogp_transform`](@ref): AutoGP-compatible transform interface (recommended)
 - [`_get_offset`](@ref): Calculates the offset value for numerical stability
 - [`_inv_boxcox`](@ref): Handles inverse Box-Cox transformation with edge case handling
 """
