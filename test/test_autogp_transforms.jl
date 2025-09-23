@@ -172,6 +172,30 @@ end
     @test maximum(abs.(int_values .- recovered)) < tolerance
 end
 
+@testitem "autogp_inverse_transform Utility Function" setup=[AutoGPTransformData] begin
+    # Test single transform
+    transform = get_autogp_transform("positive", positive_values)
+    inv_func = autogp_inverse_transform(transform)
+    
+    # Test the inverse function
+    transformed = AutoGP.Transforms.apply(transform, positive_values)
+    recovered_direct = AutoGP.Transforms.unapply(transform, transformed)
+    recovered_func = inv_func.(transformed)
+    
+    @test maximum(abs.(recovered_direct .- recovered_func)) < tolerance
+    @test maximum(abs.(positive_values .- recovered_func)) < tolerance
+    
+    # Test composed transforms
+    linear_transform = AutoGP.Transforms.LinearTransform(2.0, 1.0)
+    composed = [linear_transform, transform]
+    inv_func_composed = autogp_inverse_transform(composed)
+    
+    composed_transformed = AutoGP.Transforms.apply(composed, positive_values)
+    recovered_composed = inv_func_composed.(composed_transformed)
+    
+    @test maximum(abs.(positive_values .- recovered_composed)) < tolerance
+end
+
 @testitem "AutoGP Transform with Large Values" setup=[AutoGPTransformData] begin
     # Test with large values to check numerical stability
     large_values = [1e6, 1e7, 1e8]

@@ -152,6 +152,7 @@ combined = [transform, log_transform]
 # See Also
 - [`get_transformations`](@ref): Original function-based interface (maintained for compatibility)
 - [`PercentageTransform`](@ref), [`PositiveTransform`](@ref), [`BoxCoxTransform`](@ref): Transform implementations
+- [`autogp_inverse_transform`](@ref): Extract inverse transform function for use with forecast functions
 """
 function get_autogp_transform(
         transform_name::String, values::Vector{F}) where {F <: Real}
@@ -171,6 +172,55 @@ function get_autogp_transform(
     else
         throw(AssertionError("Unknown transform_name: $transform_name"))
     end
+end
+
+"""
+    autogp_inverse_transform(transform::AutoGP.Transforms.Transform)
+
+Extract an inverse transformation function from an AutoGP transform for use with forecasting functions.
+
+This utility function allows AutoGP transforms to be used with the existing forecasting interface
+that expects inverse transformation functions.
+
+# Arguments
+- `transform`: An AutoGP.Transforms.Transform object
+
+# Returns
+A function that can be broadcast over forecast arrays to apply the inverse transformation.
+
+# Examples
+```julia
+# Create AutoGP transform and use with forecasting
+transform = get_autogp_transform("positive", values)
+data = TData(dates, values; transformation = x -> AutoGP.Transforms.apply(transform, x))
+model = make_and_fit_model(data)
+
+# Use with forecast function
+inv_func = autogp_inverse_transform(transform)
+forecasts = forecast(model, forecast_dates, 100; inv_transformation = inv_func)
+```
+
+# See Also
+- [`forecast`](@ref): Forecast function that accepts inv_transformation parameter
+- [`forecast_with_nowcasts`](@ref): Nowcast-aware forecasting with inverse transformation
+"""
+function autogp_inverse_transform(transform::AutoGP.Transforms.Transform)
+    return y -> AutoGP.Transforms.unapply(transform, y)
+end
+
+"""
+    autogp_inverse_transform(transforms::Vector{<:AutoGP.Transforms.Transform})
+
+Extract an inverse transformation function from a composed AutoGP transform chain.
+
+# Arguments
+- `transforms`: A vector of AutoGP.Transforms.Transform objects representing a composition
+
+# Returns
+A function that applies the inverse of the composed transforms in reverse order.
+"""
+function autogp_inverse_transform(transforms::Vector{<:AutoGP.Transforms.Transform})
+    return y -> AutoGP.Transforms.unapply(transforms, y)
 end
 
 """

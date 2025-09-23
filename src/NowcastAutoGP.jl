@@ -4,7 +4,7 @@ using BoxCox: BoxCoxTransformation, confint, fit
 using LogExpFunctions: logit, logistic
 
 export TData
-export create_transformed_data, get_transformations, get_autogp_transform, make_and_fit_model, forecast,
+export create_transformed_data, get_transformations, get_autogp_transform, autogp_inverse_transform, make_and_fit_model, forecast,
        forecast_with_nowcasts, create_nowcast_data
 export PercentageTransform, PositiveTransform, BoxCoxTransform
 
