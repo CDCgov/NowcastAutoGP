@@ -78,6 +78,7 @@ AutoGP.remove_data!(base_model, nowcast.ds)            # Clean up!
 ### Testing Patterns
 
 #### Critical Pattern: `@testsnippet` Setup
+Do not import the main module in snippets; TestItems auto-provides access. `using` and `import` won't fail but are unnecessary. Also, `using Test` and `import Test` are not needed in the `TestItems` context.
 ```julia
 @testsnippet DataSnippet begin
     using Dates, LogExpFunctions
@@ -129,7 +130,6 @@ julia --project make.jl
 ```
 
 ### Code Quality & CI/CD
-- **Linting**: `ruff.toml` configured for line-length=79, includes notebooks
 - **Testing**: Multi-platform CI (Ubuntu, Windows, macOS) on Julia 1.10 + latest
 - **Coverage**: Codecov integration on Ubuntu/x64/Julia-latest only
 - **Documentation**: Auto-deployed to GitHub Pages on main branch pushes
