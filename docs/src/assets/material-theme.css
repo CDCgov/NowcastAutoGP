@@ -573,7 +573,7 @@ html.theme--documenter-dark #documenter .hljs-addition,
 html.theme--documenter-dark #documenter .hljs-variable,
 html.theme--documenter-dark #documenter .hljs-template-tag,
 html.theme--documenter-dark #documenter .hljs-template-variable {
-  color: #81c995; /* Lighter green for dark mode */
+  color: #81c785; /* Lighter green for dark mode */
 }
 
 html.theme--documenter-dark #documenter .hljs-number,
