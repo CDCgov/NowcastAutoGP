@@ -1,7 +1,7 @@
 name = "NowcastAutoGP"
 uuid = "7e9f7f4b-f590-4c14-8324-de4fcbed18f7"
 authors = ["Samuel Brand <48288458+SamuelBrand1@users.noreply.github.com>"]
-version = "0.1.0"
+version = "0.2.0"
 
 [deps]
 AutoGP = "6eb593e7-dfb4-4e48-b98e-d7222cdf0053"
