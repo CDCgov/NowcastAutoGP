@@ -101,7 +101,7 @@ The main functions we offer for inference and forecasting are:
   overview](https://probsys.github.io/AutoGP.jl/stable/api.html) for
   details) and HMC for continuous parameter samples.
 
-- `NowcastAutoGP.forecast_with_nowcasts`: This batches over proposed
+- `NowcastAutoGP.forecast`: This batches over proposed
   nowcasts for recent data, incrementally adding nowcast *possible* data
   to make forecasts before removing. The forecast distribution is the
   batch of forecasts over nowcasts of recent data.
@@ -447,7 +447,7 @@ this was LogNormal(logmean = 0.1, logstd = 0.027).
 In the following example, for each vintage we first fit to all the data
 except the most recent week (`n_redact = 1`). Second, we sample a
 multiplier for the most recent week from the LogNormal distribution 100
-times. Third, we use `forecast_with_nowcasts` to batch 20 forecasts per
+times. Third, we use `forecast` to batch 20 forecasts per
 nowcast signal ontop of the inference done in step one.
 
 This is a very simple nowcasting approach! Note that cached nowcasts
@@ -475,7 +475,7 @@ nowcast_forecasts_by_reference_date = map(selected_dates) do report_date
     nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
         transformation = transformation)
 
-    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
+    forecasts = forecast(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])

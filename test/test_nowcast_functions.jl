@@ -137,9 +137,9 @@ end
     @test result[1].values isa Vector{Float64}
 end
 
-@testitem "forecast_with_nowcasts Basic Functionality" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Basic Functionality" setup=[ForecastingWithNowcastsData] begin
     forecast_draws_per_nowcast = 10
-    result = forecast_with_nowcasts(
+    result = forecast(
         base_model, nowcast_scenarios_multi, forecast_dates_multi, forecast_draws_per_nowcast
     )
 
@@ -150,22 +150,22 @@ end
     @test size(result, 2) == 20  # 2 scenarios * 10 draws each
 end
 
-@testitem "forecast_with_nowcasts Single Nowcast Scenario" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Single Scenario" setup=[ForecastingWithNowcastsData] begin
     forecast_draws_per_nowcast = 5
-    result = forecast_with_nowcasts(
+    result = forecast(
         base_model, single_nowcast, forecast_dates_single, forecast_draws_per_nowcast
     )
 
     @test size(result) == (1, 5)  # 1 forecast date, 5 draws
 end
 
-@testitem "forecast_with_nowcasts Transform Function Application" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Transform Function Application" setup=[ForecastingWithNowcastsData] begin
     # Pre-transformed scenario
     nowcast_scenarios = [TData(single_nowcast_dates, [log(12.0)]; transformation = x -> x)]
     forecast_draws_per_nowcast = 3
 
     # Test inverse transform (exp to undo log)
-    result = forecast_with_nowcasts(
+    result = forecast(
         base_model, nowcast_scenarios, forecast_dates_single, forecast_draws_per_nowcast;
         inv_transformation = exp
     )
@@ -174,76 +174,76 @@ end
     @test all(result .> 0)  # Should be positive after exp transform
 end
 
-@testitem "forecast_with_nowcasts MCMC Refinement Options" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts MCMC Refinement Options" setup=[ForecastingWithNowcastsData] begin
     # Test parameter-only updates (n_mcmc = 0, n_hmc > 0)
-    result_params = forecast_with_nowcasts(
+    result_params = forecast(
         base_model, single_nowcast, forecast_dates_single, 2;
         n_mcmc = 0, n_hmc = 2
     )
     @test size(result_params) == (1, 2)
 
     # Test full MCMC (n_mcmc > 0, n_hmc > 0)
-    result_full = forecast_with_nowcasts(
+    result_full = forecast(
         base_model, single_nowcast, forecast_dates_single, 2;
         n_mcmc = 2, n_hmc = 2
     )
     @test size(result_full) == (1, 2)
 
     # Test no refinement (both = 0)
-    result_none = forecast_with_nowcasts(
+    result_none = forecast(
         base_model, single_nowcast, forecast_dates_single, 2;
         n_mcmc = 0, n_hmc = 0
     )
     @test size(result_none) == (1, 2)
 end
 
-@testitem "forecast_with_nowcasts Particle Resampling" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Particle Resampling" setup=[ForecastingWithNowcastsData] begin
     # Test with resampling threshold
-    result = forecast_with_nowcasts(
+    result = forecast(
         base_model, single_nowcast, forecast_dates_single, 2;
         ess_threshold = 0.5  # Force resampling
     )
     @test size(result) == (1, 2)
 end
 
-@testitem "forecast_with_nowcasts Multiple Forecast Dates" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Multiple Forecast Dates" setup=[ForecastingWithNowcastsData] begin
     nowcast_scenarios = [
         TData(single_nowcast_dates, [12.0]; transformation = x -> x),
         TData(single_nowcast_dates, [11.8]; transformation = x -> x)
     ]
     forecast_draws_per_nowcast = 3
 
-    result = forecast_with_nowcasts(
+    result = forecast(
         base_model, nowcast_scenarios, forecast_dates_range, forecast_draws_per_nowcast
     )
 
     @test size(result) == (4, 6)  # 4 forecast dates, 2 scenarios * 3 draws
 end
 
-@testitem "forecast_with_nowcasts Error Conditions" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Error Conditions" setup=[ForecastingWithNowcastsData] begin
     # Empty nowcasts
-    @test_throws AssertionError forecast_with_nowcasts(
+    @test_throws AssertionError forecast(
         base_model, TData[], forecast_dates_single, 5
     )
 
     # Invalid MCMC parameters (n_mcmc > 0 but n_hmc = 0)
-    @test_throws AssertionError forecast_with_nowcasts(
+    @test_throws AssertionError forecast(
         base_model, single_nowcast, forecast_dates_single, 5;
         n_mcmc = 5, n_hmc = 0
     )
 end
 
-@testitem "forecast_with_nowcasts Consistency Checks" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Consistency Checks" setup=[ForecastingWithNowcastsData] begin
     # Test structural consistency rather than exact reproducibility due to randomness
-    result1 = forecast_with_nowcasts(base_model, single_nowcast, forecast_dates_single, 5)
-    result2 = forecast_with_nowcasts(base_model, single_nowcast, forecast_dates_single, 5)
+    result1 = forecast(base_model, single_nowcast, forecast_dates_single, 5)
+    result2 = forecast(base_model, single_nowcast, forecast_dates_single, 5)
 
     @test size(result1) == size(result2)
     @test all(isfinite.(result1))
     @test all(isfinite.(result2))
 end
 
-@testitem "forecast_with_nowcasts Integration with create_nowcast_data" setup=[ForecastingWithNowcastsData] begin
+@testitem "forecast with Nowcasts Integration with create_nowcast_data" setup=[ForecastingWithNowcastsData] begin
     # Test full workflow: matrix -> nowcast data -> forecasts
     nowcast_matrix = [12.0 11.8; 13.0 12.5]  # 2 time points, 2 scenarios
     nowcast_dates = [Date(2024, 1, 11), Date(2024, 1, 12)]
@@ -252,7 +252,7 @@ end
     nowcast_scenarios = create_nowcast_data(nowcast_matrix, nowcast_dates)
 
     forecast_dates = [Date(2024, 1, 13)]
-    result = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates, 3)
+    result = forecast(base_model, nowcast_scenarios, forecast_dates, 3)
 
     @test size(result) == (1, 6)  # 1 forecast date, 2 scenarios * 3 draws
 end

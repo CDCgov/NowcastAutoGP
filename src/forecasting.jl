@@ -1,17 +1,20 @@
 
+# Internal function for basic forecasting without nowcasts
 """
-    forecast(model, forecast_dates, forecast_draws::Int)
+    _forecast_base(model, forecast_dates, forecast_draws::Int; inv_transformation = y -> y)
 
-Generate forecasts using the fitted `AutoGP` model.
+Internal function to generate forecasts using the fitted `AutoGP` model without nowcast scenarios.
 
 # Arguments
 - `model`: The fitted GP model.
 - `forecast_dates`: A vector of dates for which to generate forecasts.
-- `forecast_draws`: The number of forecast samples to draw (default: 2000).
+- `forecast_draws`: The number of forecast samples to draw.
+- `inv_transformation`: A function to apply inverse transformation to forecasts (default: identity).
+
 # Returns
 - A matrix of forecast samples, where each column corresponds to a sample for the respective date.
 """
-function forecast(model, forecast_dates, forecast_draws::Int; inv_transformation = y -> y)
+function _forecast_base(model, forecast_dates, forecast_draws::Int; inv_transformation = y -> y)
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
     dist = AutoGP.predict_mvn(model, dates_vector)
@@ -22,8 +25,32 @@ function forecast(model, forecast_dates, forecast_draws::Int; inv_transformation
 end
 
 """
-    forecast_with_nowcasts(base_model, nowcasts, forecast_dates, forecast_draws_per_nowcast;
-                          inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
+    forecast(model, forecast_dates, forecast_draws::Int; inv_transformation = y -> y)
+
+Generate forecasts using the fitted `AutoGP` model without nowcast scenarios.
+
+# Arguments
+- `model`: The fitted GP model.
+- `forecast_dates`: A vector of dates for which to generate forecasts.
+- `forecast_draws`: The number of forecast samples to draw.
+- `inv_transformation`: A function to apply inverse transformation to forecasts (default: identity).
+
+# Returns
+- A matrix of forecast samples, where each column corresponds to a sample for the respective date.
+
+# Example
+```julia
+# Generate forecasts without nowcasts
+forecasts = forecast(model, forecast_dates, 100)
+```
+"""
+function forecast(model, forecast_dates, forecast_draws::Int; inv_transformation = y -> y)
+    return _forecast_base(model, forecast_dates, forecast_draws; inv_transformation = inv_transformation)
+end
+
+"""
+    forecast(base_model, nowcasts, forecast_dates, forecast_draws_per_nowcast;
+             inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
 
 Generate forecasts incorporating uncertainty from nowcast data by updating a base GP model with each nowcast scenario.
 
@@ -56,10 +83,10 @@ nowcast_scenarios = [
     # ... more nowcast scenarios
 ]
 forecast_dates = Date(2024,1,1):Day(1):Date(2024,1,10) # Can overlap with nowcast dates for predictive sampling as well as forecasting
-forecasts = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates, 100)
+forecasts = forecast(base_model, nowcast_scenarios, forecast_dates, 100)
 ```
 """
-function forecast_with_nowcasts(
+function forecast(
         base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:TData},
         forecast_dates, forecast_draws_per_nowcast::Int;
         inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
@@ -86,7 +113,7 @@ function forecast_with_nowcasts(
         end
 
         # Generate forecasts for this nowcast scenario
-        scenario_forecasts = forecast(
+        scenario_forecasts = _forecast_base(
             base_model, forecast_dates, forecast_draws_per_nowcast;
             inv_transformation = inv_transformation)
 

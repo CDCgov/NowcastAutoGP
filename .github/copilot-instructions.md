@@ -17,7 +17,7 @@ NowcastAutoGP.jl is a **Julia package for forecasting with nowcasting** that com
 1. **Transform Data**: `create_transformed_data(dates, values; transformation)` using `get_transformations()`
 2. **Fit Base Model**: `make_and_fit_model(data)` on historical "confirmed" data
 3. **Create Nowcasts**: Generate multiple `TData` objects representing uncertain recent data scenarios
-4. **Forecast with Uncertainty**: `forecast_with_nowcasts()` temporarily adds each nowcast to model, generates forecasts, then removes it
+4. **Forecast with Uncertainty**: `forecast()` temporarily adds each nowcast to model, generates forecasts, then removes it
 
 ## Transformation System (`src/transformations.jl`)
 
