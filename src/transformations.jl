@@ -3,14 +3,14 @@
 
 Internal function to compute the inverse Box-Cox transformation with edge case handling.
 """
-function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
+function _inv_boxcox(λ::Real, offset, max_value::F) where {F}
     function _inv(y)
         lambda_y_plus_1 = λ * y + one(F)
 
         # Handle edge cases based on λ sign and lambda_y_plus_1 value
         if λ > 0
             # Standard case: ensure lambda_y_plus_1 > 0
-            safe_value = max(lambda_y_plus_1, F(1e-10))
+            safe_value = max(lambda_y_plus_1, 1e-10)
             result = safe_value^(1/λ) - offset
         elseif λ < 0
             # Negative λ case: more careful handling
@@ -29,7 +29,7 @@ function _inv_boxcox(λ::Real, offset::F, max_values) where {F}
                     # lambda_y_plus_1 is very small but positive
                     clamped_result = lambda_y_plus_1^(1/λ)
                     # Clamp extremely large values to reasonable bounds
-                    max_reasonable = F(1000 * max_values) # 1000x the max observed value
+                    max_reasonable = F(1000 * max_value) # 1000x the max observed value
                     result = min(clamped_result, max_reasonable) - offset
                 end
             end
@@ -48,10 +48,16 @@ end
 
 Internal function to compute an offset for transformations to ensure numerical stability.
 """
-function _get_offset(values::Vector{F}) where {F <: Real}
+function _get_offset(values::Vector{F}) where {F <: AbstractFloat}
     @assert !isempty(values) "Values array must not be empty"
     @assert all(values .>= zero(F)) "All values must be non-negative for the selected transformations"
-    return minimum(values) == zero(F) ? minimum(values[values .> 0]) / 2 : zero(F)  # Half the minimum positive value for stability
+    return minimum(values) == zero(F) ? F(minimum(values[values .> 0]) / 2) : zero(F)  # Half the minimum positive value for stability
+end
+
+function _get_offset(values::Vector{I}) where {I <: Integer}
+    @assert !isempty(values) "Values array must not be empty"
+    @assert all(values .>= zero(I)) "All values must be non-negative for the selected transformations"
+    return minimum(values) == zero(I) ? minimum(values[values .> 0]) / 2 : 0.0  # Half the minimum positive value for stability
 end
 
 """
@@ -131,7 +137,8 @@ function get_transformations(
     offset = _get_offset(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
-        return (y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))
+        return (
+            y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))
     elseif transform_name == "positive"
         @info "Using positive transformation with offset = $offset"
         return (y -> log(y + offset), y -> max(exp(y) - offset, zero(F)))

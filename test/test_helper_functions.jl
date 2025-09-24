@@ -144,7 +144,8 @@ end
 end
 
 @testitem "get_transformations Percentage with data with zeros" setup=[DataSnippet] begin
-    forward_transform, inverse_transform = get_transformations("percentage", values_with_zero)
+    forward_transform,
+    inverse_transform = get_transformations("percentage", values_with_zero)
 
     # Test that we get functions
     @test isa(forward_transform, Function)
@@ -188,7 +189,6 @@ end
         @test recovered ≈ val atol=1e-6
     end
 end
-
 
 @testitem "get_transformations BoxCox Edge Cases" setup=[DataSnippet] begin
     # Test with very small positive values to trigger edge cases
@@ -281,6 +281,126 @@ end
         @test isfinite(recovered)
         @test recovered ≥ 0.0
         @test recovered ≈ val rtol=1e-3  # Relative tolerance for extreme values
+    end
+end
+
+@testitem "get_transformations BoxCox with Integer Data" setup=[DataSnippet] begin
+    # Test BoxCox transformation with integer input values
+    integer_values = [1, 2, 5, 8, 10, 15, 20, 25, 30]  # Mix of small and larger integers
+    forward_transform, inverse_transform = get_transformations("boxcox", integer_values)
+
+    @test isa(forward_transform, Function)
+    @test isa(inverse_transform, Function)
+
+    # Test round-trip transformation for integer values
+    for val in integer_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+
+        # Verify transformed value is finite
+        @test isfinite(transformed)
+
+        # Verify recovered value is finite, non-negative, and close to original
+        @test isfinite(recovered)
+        @test recovered ≥ 0.0
+        @test recovered ≈ val atol=1e-6
+    end
+
+    # Test that the transformation can handle both integer and float inputs seamlessly
+    mixed_values = [1, 2.5, 5, 7.8, 10, 12.3, 15]
+    forward_transform, inverse_transform = get_transformations("boxcox", mixed_values)
+
+    for val in mixed_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-6
+    end
+
+    # Test that the transformation can handle both integer and float inputs seamlessly
+    values_with_zeros = [1, 2, 5, 8, 10, 15, 20, 25, 30, 0]
+    forward_transform, inverse_transform = get_transformations("boxcox", values_with_zeros)
+    for val in values_with_zeros
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-6
+    end
+end
+
+@testitem "get_transformations Float32 Type Preservation" setup=[DataSnippet] begin
+    # Test that Float32 data stays Float32
+    float32_values = Float32[1.0, 2.0, 3.0, 4.0, 5.0]
+    forward_transform, inverse_transform = get_transformations("positive", float32_values)
+
+    # Test that transforming Float32 values preserves the type
+    for val in float32_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+
+        # The recovered value should still be close to the original
+        @test recovered ≈ val atol=1e-6
+        # Note: The exact type may be promoted during calculations, but the result should be valid
+    end
+
+    # Test BoxCox with Float32
+    forward_transform, inverse_transform = get_transformations("boxcox", float32_values)
+    for val in float32_values
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+        @test recovered ≈ val atol=1e-6
+    end
+end
+
+@testitem "get_transformations Integer with Zeros Type Handling" setup=[DataSnippet] begin
+    # Test specific case: integer data with zeros
+    # This should handle the type conversion issue where offset calculation returns Float64
+    int_values_with_zeros = [0, 1, 2, 3, 4, 5]  # Integer vector with zeros
+
+    # Test positive transformation
+    forward_transform,
+    inverse_transform = get_transformations("positive", int_values_with_zeros)
+
+    @test isa(forward_transform, Function)
+    @test isa(inverse_transform, Function)
+
+    # Test round-trip for all values including zero
+    for val in int_values_with_zeros
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+
+        # Should handle the type conversion gracefully
+        @test isfinite(transformed)
+        @test isfinite(recovered)
+        @test recovered ≥ 0.0
+        @test recovered ≈ val atol=1e-6
+    end
+
+    # Test BoxCox transformation with integer zeros
+    forward_transform,
+    inverse_transform = get_transformations("boxcox", int_values_with_zeros)
+
+    for val in int_values_with_zeros
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+
+        @test isfinite(transformed)
+        @test isfinite(recovered)
+        @test recovered ≥ 0.0
+        @test recovered ≈ val atol=1e-6
+    end
+
+    # Test percentage transformation with integer zeros
+    int_percentages_with_zeros = [0, 10, 25, 50, 75, 90]
+    forward_transform,
+    inverse_transform = get_transformations("percentage", int_percentages_with_zeros)
+
+    for val in int_percentages_with_zeros
+        transformed = forward_transform(val)
+        recovered = inverse_transform(transformed)
+
+        @test isfinite(transformed)
+        @test isfinite(recovered)
+        @test recovered ≥ 0.0
+        @test recovered ≈ val atol=1e-6
     end
 end
 

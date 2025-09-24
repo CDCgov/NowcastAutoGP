@@ -14,7 +14,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Getting started" => "vignettes/tutorial.md",
-        "API Reference" => "api.md",
+        "API Reference" => "api.md"
     ],
     clean = true,
     checkdocs = :exports
@@ -22,5 +22,5 @@ makedocs(
 
 deploydocs(
     repo = "github.com/CDCgov/NowcastAutoGP.git",
-    devbranch = "main",
+    devbranch = "main"
 )
