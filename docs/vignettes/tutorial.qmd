@@ -63,7 +63,7 @@ The main functions we offer for inference and forecasting are:
 
 - `NowcastAutoGP.make_and_fit_model`: This wraps `AutoGP` functionality to make inference on the **stable** part of the time series data using sequential Monte Carlo (SMC) over sequences of data ingestion over `n_particle` SMC particles. Each particle represents a Gaussian process (GP) model for the time series, and at each data ingestion step this particle ensemble can be resampled. Within each SMC particle new possible GP kernel structures and hyperparmeter values are proposed using a specialised MCMC proposal distribution for structural choices (see [`AutoGP` overview](https://probsys.github.io/AutoGP.jl/stable/api.html) for details) and HMC for continuous parameter samples.
 
-- `NowcastAutoGP.forecast_with_nowcasts`: This batches over proposed nowcasts for recent data, incrementally adding nowcast _possible_ data to make forecasts before removing. The forecast distribution is the batch of forecasts over nowcasts of recent data.
+- `NowcastAutoGP.forecast`: This batches over proposed nowcasts for recent data, incrementally adding nowcast _possible_ data to make forecasts before removing. The forecast distribution is the batch of forecasts over nowcasts of recent data.
 
 # Using `NowcastAutoGP` with NHSN hospitalisation data
 
@@ -380,7 +380,7 @@ Therefore, we fit the ratio of last weeks report to last weeks eventual reported
 
 In the following example, for each vintage we first fit to all the data except the most recent week (`n_redact = 1`).
 Second, we sample a multiplier for the most recent week from the LogNormal distribution 100 times.
-Third, we use `forecast_with_nowcasts` to batch 20 forecasts per nowcast signal ontop of the inference done in step one.
+Third, we use `forecast` to batch 20 forecasts per nowcast signal ontop of the inference done in step one.
 
 This is a very simple nowcasting approach!
 Note that cached nowcasts from a more sophisticated approach, such as a full generative model defined by e.g. [`epinowcast`](https://package.epinowcast.org/) or [`baselinenowcast`](https://baselinenowcast.epinowcast.org/), could have been deserialized into this approach.
@@ -405,7 +405,7 @@ nowcast_forecasts_by_reference_date = map(selected_dates) do report_date
     nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
         transformation = transformation)
 
-    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
+    forecasts = forecast(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])
