@@ -51,9 +51,9 @@ using NowcastAutoGP
         @test length(result.stable_data_dates) == 8  # 10 total - 2 nowcast dates
         @test length(result.stable_data_values) == 8
 
-        # Check forecast dates
-        @test length(result.forecast_dates) == 4
-        @test result.forecast_dates[1] == input.forecast_date + Week(1)
+        # Check forecast dates (includes nowcast week -1, current week 0, and future weeks 1-4)
+        @test length(result.forecast_dates) == 6  # -1, 0, 1, 2, 3, 4 for n_forecast_weeks=4
+        @test result.forecast_dates[1] == input.forecast_date + Week(-1)
         @test result.forecast_dates[end] == input.forecast_date + Week(4)
 
         # Check that transformation functions are callable
@@ -99,12 +99,12 @@ using NowcastAutoGP
                 n_hmc = 3
             )
 
-            # Check forecast dates
-            @test length(forecast_dates) == 2
-            @test forecast_dates[1] == input.forecast_date + Week(1)
+            # Check forecast dates (includes nowcast week -1, current week 0, and future weeks 1-2)
+            @test length(forecast_dates) == 4  # -1, 0, 1, 2 for n_forecast_weeks=2
+            @test forecast_dates[1] == input.forecast_date + Week(-1)
 
             # Check forecasts dimensions
-            @test size(forecasts, 1) == 2
+            @test size(forecasts, 1) == 4  # matches forecast_dates length
             @test size(forecasts, 2) == 10
 
             # Check that all forecasts are positive
@@ -126,13 +126,13 @@ using NowcastAutoGP
                 n_hmc = 3
             )
 
-            # Check forecast dates
-            @test length(forecast_dates) == 2
-            @test forecast_dates[1] == input.forecast_date + Week(1)
-            @test forecast_dates[2] == input.forecast_date + Week(2)
+            # Check forecast dates (includes nowcast week -1, current week 0, and future weeks 1-2)
+            @test length(forecast_dates) == 4  # -1, 0, 1, 2 for n_forecast_weeks=2
+            @test forecast_dates[1] == input.forecast_date + Week(-1)
+            @test forecast_dates[2] == input.forecast_date + Week(0)
 
             # Check forecasts matrix dimensions
-            @test size(forecasts, 1) == 2  # forecast weeks
+            @test size(forecasts, 1) == 4  # forecast weeks (including nowcast weeks)
             # With nowcasts, the actual number of forecasts may be less than requested
             @test size(forecasts, 2) > 0  # should have some forecasts
 
@@ -157,8 +157,8 @@ using NowcastAutoGP
         forecast_dates, forecasts = forecast_with_epiautogp(input, args)
 
         # Check results
-        @test length(forecast_dates) == 2
-        @test size(forecasts, 1) == 2
+        @test length(forecast_dates) == 4  # -1, 0, 1, 2 for n_forecast_weeks=2
+        @test size(forecasts, 1) == 4
         @test size(forecasts, 2) == 30
         @test all(forecasts .> 0)
     end
