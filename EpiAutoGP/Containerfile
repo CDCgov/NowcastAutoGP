@@ -10,14 +10,11 @@ ARG GIT_BRANCH_NAME
 ENV GIT_BRANCH_NAME=$GIT_BRANCH_NAME
 
 # Install and precompile dependencies
-COPY /EpiAutoGP/Project.toml /EpiAutoGP/Project.toml
+COPY /EpiAutoGP /EpiAutoGP
 
 WORKDIR /EpiAutoGP
 
 RUN julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
-
-# Copy the rest of the code
-COPY /EpiAutoGP /EpiAutoGP
 
 # Threads Overloadable by user at runtime
 ENV JULIA_NUM_THREADS=auto
