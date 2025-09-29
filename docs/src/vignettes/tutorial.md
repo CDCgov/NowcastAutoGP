@@ -1,5 +1,5 @@
 # Getting Started with `NowcastAutoGP`
-CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)
+CDC Center for Forecasting and Outbreak Analytics (CDC/CFA)
 
 # Introduction
 

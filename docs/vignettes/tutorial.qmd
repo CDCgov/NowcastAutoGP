@@ -1,7 +1,7 @@
 ---
 title: "Getting Started with `NowcastAutoGP`"
 subtitle: "Combining nowcasting and `AutoGP`"
-author: "CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)"
+author: "CDC Center for Forecasting and Outbreak Analytics (CDC/CFA)"
 engine: julia
 julia:
   exeflags: ["--project=./..", "--threads=8"]
@@ -86,7 +86,7 @@ using CSV, TidierData
 Random.seed!(123)
 
 # Set CairoMakie output to png for quarto compat
-CairoMakie.activate!(type = "png")
+CairoMakie.activate!(type="png")
 ```
 
 ## Loading Surveillance Data
@@ -121,11 +121,11 @@ end
 n_dates = length(selected_dates)
 
 # Create figure
-fig = Figure(size = (800, 600))
+fig = Figure(size=(800, 600))
 ax = Axis(fig[1, 1],
-    xlabel = "Reference Date",
-    ylabel = "NHSN confirmed Covid hospitalisations",
-    title = "Reference Date vs Confirm by Report Date (Oct 2024+, all US)"
+    xlabel="Reference Date",
+    ylabel="NHSN confirmed Covid hospitalisations",
+    title="Reference Date vs Confirm by Report Date (Oct 2024+, all US)"
 )
 
 # Generate colors - latest date will be black
@@ -139,10 +139,10 @@ for (report_date, color) in zip(selected_dates, colors)
     end
 
     scatterlines!(ax, date_data.time_index, date_data.confirm,
-        color = color,
-        label = string(report_date),
-        markersize = 8,
-        linewidth = 2
+        color=color,
+        label=string(report_date),
+        markersize=8,
+        linewidth=2
     )
 end
 
@@ -152,7 +152,7 @@ plot_start_date = Date(2024, 10, 1)
 plot_end_date = Date(2025, 10, 1)
 
 # Create tick positions and labels (show every 4 weeks ≈ monthly)
-tick_dates = range(plot_start_date, step = Week(4), length = 13)
+tick_dates = range(plot_start_date, step=Week(4), length=13)
 
 # plot_start_date:Week(4):plot_end_date
 tick_indices = d2index.(tick_dates)
@@ -161,7 +161,7 @@ tick_labels = [monthname(d)[1:3] * "-" * string(d)[(end-1):end] for d in tick_da
 ax.xticks = (tick_indices, tick_labels)
 
 # Add legend
-axislegend(ax, "report dates"; position = :rt)
+axislegend(ax, "report dates"; position=:rt)
 xlims!(ax, d2index(plot_start_date), d2index(plot_end_date))
 ylims!(ax, 0, 2.2e4)
 resize_to_layout!(fig)
@@ -203,11 +203,11 @@ A `fit_on_data` function that does the core workflow on confirmed data:
 ```{julia}
 function fit_on_data(report_date;
     n_redact,
-    max_ahead = 8,
-    date_data = date_data,
-    n_particles = 24,
-    smc_data_proportion = 0.1,
-    n_mcmc = 50, n_hmc = 50)
+    max_ahead=8,
+    date_data=date_data,
+    n_particles=24,
+    smc_data_proportion=0.1,
+    n_mcmc=50, n_hmc=50)
 
     # Dates to forecast
     forecast_dates = [maximum(date_data.reference_date) + Week(k) for k = 0:max_ahead]
@@ -215,9 +215,9 @@ function fit_on_data(report_date;
     transformation, inv_transformation = get_transformations("boxcox", date_data.confirm)
     data_to_fit = create_transformed_data(date_data.reference_date[1:(end-n_redact)], date_data.confirm[1:(end-n_redact)]; transformation)
     model = make_and_fit_model(data_to_fit;
-                                n_particles,
-                                smc_data_proportion,
-                                n_mcmc, n_hmc)
+        n_particles,
+        smc_data_proportion,
+        n_mcmc, n_hmc)
     return model, forecast_dates, transformation, inv_transformation
 end
 ```
@@ -226,25 +226,25 @@ We also give a handy plotting utility for plotting our results.
 
 ```{julia}
 function plot_with_forecasts(forecasts, title::String;
-                            n_ahead,
-                            selected_dates,
-                            colors = colors,
-                            covid_data = nhsn_vintage_covid_data,
-                            plot_start_date = plot_start_date,
-                            plot_end_date = plot_end_date,
-                            y_lim_up = 2.2e4,
-                            size = (1000, 700),
-                            xticks = (tick_indices, tick_labels),
-    )
+    n_ahead,
+    selected_dates,
+    colors=colors,
+    covid_data=nhsn_vintage_covid_data,
+    plot_start_date=plot_start_date,
+    plot_end_date=plot_end_date,
+    y_lim_up=2.2e4,
+    size=(1000, 700),
+    xticks=(tick_indices, tick_labels),
+)
 
-    fig = Figure(size = size)
+    fig = Figure(size=size)
     ax = Axis(fig[1, 1],
-        xlabel = "Date",
-        ylabel = "NHSN confirmed Covid hospitalizations",
-        title = title
+        xlabel="Date",
+        ylabel="NHSN confirmed Covid hospitalizations",
+        title=title
     )
 
-# Plot forecasts
+    # Plot forecasts
     for (report_date, forecast, color) in zip(selected_dates, forecasts, colors)
 
         date_data = @chain nhsn_vintage_covid_data begin
@@ -254,9 +254,9 @@ function plot_with_forecasts(forecasts, title::String;
 
         # Plot historical data as light lines
         scatterlines!(ax, date_data.time_index, date_data.confirm,
-            color = color,
-            linewidth = 2,
-            label = "$(report_date) data"
+            color=color,
+            linewidth=2,
+            label="$(report_date) data"
         )
 
         # Extract quantiles for forecasts
@@ -267,19 +267,19 @@ function plot_with_forecasts(forecasts, title::String;
 
         # Plot uncertainty band (25%-75%)
         band!(ax, forecast_indices, q25, q75,
-            color = (color, 0.3),
+            color=(color, 0.3),
         )
 
         # Plot median forecast
         lines!(ax, forecast_indices, median,
-            color = color,
-            linewidth = 3,
-            linestyle = :dash,
+            color=color,
+            linewidth=3,
+            linestyle=:dash,
         )
     end
 
     # Add legend
-    axislegend(ax, "report dates"; position = :rt)
+    axislegend(ax, "report dates"; position=:rt)
     # Limits
     xlims!(ax, d2index(plot_start_date), d2index(plot_end_date))
     ylims!(ax, 0, y_lim_up)
@@ -306,13 +306,13 @@ n_forecasts = 2000
 naive_forecasts_by_reference_date = map(selected_dates) do report_date
     # Filter for correct report date
     date_data = @chain training_data begin
-            @filter(report_date == !!report_date)
-            @arrange(reference_date)
-        end
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
     model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-                        n_redact = 0,
-                        date_data = date_data,
-                        )
+        n_redact=0,
+        date_data=date_data,
+    )
     forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -320,7 +320,7 @@ naive_forecasts_by_reference_date = map(selected_dates) do report_date
         qs'
     end
 
-    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+    return (dates=forecast_dates, forecasts=forecasts, iqrs=iqr_forecasts)
 end
 
 ```
@@ -330,9 +330,9 @@ When we plot we see that the unrevised data consistently underestimates the even
 ```{julia}
 #| output: true
 plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different Report Dates (naive)";
-                        n_ahead = 4,
-                            selected_dates = selected_dates,
-    )
+    n_ahead=4,
+    selected_dates=selected_dates,
+)
 ```
 
 ### Approach 2: Removing uncertain data
@@ -344,13 +344,13 @@ Therefore, another strategy could be to simply redact that week but otherwise le
 
 leave_out_last_forecasts_by_reference_date = map(selected_dates) do report_date
     date_data = @chain training_data begin
-                @filter(report_date == !!report_date)
-                @arrange(reference_date)
-            end
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
     model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-                            n_redact = 1, # Ignore last week of data
-                            date_data = date_data,
-                            )
+        n_redact=1, # Ignore last week of data
+        date_data=date_data,
+    )
     forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -358,7 +358,7 @@ leave_out_last_forecasts_by_reference_date = map(selected_dates) do report_date
         qs'
     end
 
-    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+    return (dates=forecast_dates, forecasts=forecasts, iqrs=iqr_forecasts)
 end
 ```
 
@@ -367,9 +367,9 @@ This looks improved but the forecasts have quite large prediction intervals (we 
 ```{julia}
 #| output: true
 plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from Different Report Dates (Leave out last week)";
-                            n_ahead = 4,
-                            selected_dates = selected_dates,
-    )
+    n_ahead=4,
+    selected_dates=selected_dates,
+)
 ```
 
 ### Approach 3: Forecasting with a simple nowcast
@@ -391,28 +391,28 @@ n_nowcast_samples = 100
 nowcast_forecasts_by_reference_date = map(selected_dates) do report_date
     # Filter for correct report date
     date_data = @chain training_data begin
-            @filter(report_date == !!report_date)
-            @arrange(reference_date)
-        end
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
     # Fit on all accepted data
     model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-                        n_redact = 1,
-                        date_data = date_data,
-                        )
+        n_redact=1,
+        date_data=date_data,
+    )
     # Simple nowcast on most recent data where we suspect significant revisions
     nowcast_samples = [[date_data.confirm[end] * exp(0.1 + randn() * 0.027)] for _ = 1:n_nowcast_samples]
 
     nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
-        transformation = transformation)
+        transformation=transformation)
 
-    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples ; inv_transformation)
+    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])
         qs'
     end
 
-    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+    return (dates=forecast_dates, forecasts=forecasts, iqrs=iqr_forecasts)
 end
 ```
 
@@ -421,9 +421,9 @@ We see that this significantly improves the forecasting visually.
 ```{julia}
 #| output: true
 plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Different Report Dates (Simple Nowcast)";
-                            n_ahead = 4,
-                            selected_dates = selected_dates,
-    )
+    n_ahead=4,
+    selected_dates=selected_dates,
+)
 ```
 
 ## Scoring
@@ -459,18 +459,18 @@ function crps(y::Real, X::Vector{<:Real})
     return term1 - 0.5 * term2
 end
 
-function score_forecast(latestdata, forecast_dates, F; max_horizon = 4, data_transform = x -> x)
-        @assert max_horizon <= length(forecast_dates) "Not enough data to score full horizon"
-        score_dates = forecast_dates[1:max_horizon]
-        scorable_data = @filter(latestdata, reference_date in !!score_dates)
-        S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y, X #Iterate over forecast dates
-            crps(data_transform(y), data_transform.(X))
-        end
-        return S / max_horizon
+function score_forecast(latestdata, forecast_dates, F; max_horizon=4, data_transform=x -> x)
+    @assert max_horizon <= length(forecast_dates) "Not enough data to score full horizon"
+    score_dates = forecast_dates[1:max_horizon]
+    scorable_data = @filter(latestdata, reference_date in !!score_dates)
+    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y, X #Iterate over forecast dates
+        crps(data_transform(y), data_transform.(X))
+    end
+    return S / max_horizon
 end
 
-function score_all_forecasts(latestdata, forecasts; max_horizon = 4, data_transform = x -> x)
-    total_score = mapreduce(+, forecasts; init = 0.0) do F # iterate over forecasts
+function score_all_forecasts(latestdata, forecasts; max_horizon=4, data_transform=x -> x)
+    total_score = mapreduce(+, forecasts; init=0.0) do F # iterate over forecasts
         forecast_dates = F.dates
         score_forecast(latestdata, forecast_dates, F; max_horizon, data_transform)
     end
@@ -485,7 +485,7 @@ most_recent_report_date = maximum(selected_dates)
 latestdata = @filter(nhsn_vintage_covid_data, report_date == !!most_recent_report_date)
 
 scores = map([naive_forecasts_by_reference_date, leave_out_last_forecasts_by_reference_date, nowcast_forecasts_by_reference_date]) do F
-    score_all_forecasts(latestdata, F[1:(end-2)]; data_transform = identity)
+    score_all_forecasts(latestdata, F[1:(end-2)]; data_transform=identity)
 end
 
 ```
@@ -503,33 +503,33 @@ score_ratios = [score / baseline_score for score in scores]
 # Create bar plot comparing score ratios
 method_names = ["Naive", "Leave Out Last", "Simple Nowcast"]
 
-fig = Figure(size = (600, 400))
+fig = Figure(size=(600, 400))
 ax = Axis(fig[1, 1],
-    xlabel = "Forecasting Method",
-    ylabel = "Score Ratio (lower is better)",
-    title = "Forecast Performance: Score Ratios vs Simple Nowcast"
+    xlabel="Forecasting Method",
+    ylabel="Score Ratio (lower is better)",
+    title="Forecast Performance: Score Ratios vs Simple Nowcast"
 )
 
 # Create bar plot with different colors based on performance
 bar_colors = [ratio > 1 ? :red : ratio == 1 ? :green : :blue for ratio in score_ratios]
 barplot!(ax, 1:3, score_ratios,
-    color = bar_colors,
-    alpha = 0.7,
-    strokewidth = 2,
-    strokecolor = :black)
+    color=bar_colors,
+    alpha=0.7,
+    strokewidth=2,
+    strokecolor=:black)
 
 # Add value labels on top of bars
 for (i, ratio) in enumerate(score_ratios)
-    text!(ax, i, ratio + 0.02, text = string(round(ratio, digits=2)),
-          align = (:center, :bottom), fontsize = 12)
+    text!(ax, i, ratio + 0.02, text=string(round(ratio, digits=2)),
+        align=(:center, :bottom), fontsize=12)
 end
 
 # Add horizontal line at y=1 for reference (baseline)
-hlines!(ax, [1], color = :black, linestyle = :dash, linewidth = 1)
+hlines!(ax, [1], color=:black, linestyle=:dash, linewidth=1)
 
 # Set x-axis labels
 ax.xticks = (1:3, method_names)
-ax.xticklabelrotation = π/4
+ax.xticklabelrotation = π / 4
 
 # Add some padding to y-limits
 y_max = maximum(score_ratios)
