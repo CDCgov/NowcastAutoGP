@@ -343,7 +343,6 @@ def simulate_data_from_bootstrap(
     loc_level_nwss_data_columns,
     n_training_weeks,
     nhsn_cols,
-    bootstrap_private_data_dir,
     param_estimates,
     n_forecast_days,
     predictive_var_names,
@@ -376,8 +375,6 @@ def simulate_data_from_bootstrap(
         Number of weeks of NHSN training data (epidemiological weeks)
     nhsn_cols : list[str]
         Column names for NHSN hospital admissions data structure
-    bootstrap_private_data_dir : Path
-        Directory where simulated data files will be saved
     param_estimates : pl.DataFrame
         Parameter estimates for epidemiological model (generation intervals, delays, etc.)
     n_forecast_days : int
@@ -393,8 +390,9 @@ def simulate_data_from_bootstrap(
 
     Returns
     -------
-    None
-        Function saves simulated data files to bootstrap_private_data_dir
+    dict[str, pl.DataFrame]
+        Dictionary containing DataFrames for each variable in predictive_var_names.
+        Each DataFrame contains synthetic surveillance data for the specified time period.
 
     Notes
     -----
@@ -415,7 +413,7 @@ def simulate_data_from_bootstrap(
     - Lab-site combinations with proper indexing
     
     **Model Integration:**
-    - Fits PyRenew-HEW model to generated data
+    - Fits PyRenew-HEW model to generated data using temporary files
     - Extracts posterior predictive samples
     - Creates realistic forecast scenarios
     
@@ -553,77 +551,80 @@ def simulate_data_from_bootstrap(
         .select(cs.by_name(nhsn_cols))
     )
 
-    # replace with tempfile utilities
-    # https://docs.python.org/3/library/tempfile.html
-    bootstrap_nhsn_data_path = Path(bootstrap_private_data_dir, "nhsn_data.parquet")
-    bootstrap_nhsn_data.write_parquet(bootstrap_nhsn_data_path)
+    # Create temporary files for model fitting (not saved to bootstrap directory)
+    import tempfile
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_dir = Path(temp_dir)
+        bootstrap_nhsn_data_path = temp_dir / "nhsn_data.parquet"
+        bootstrap_nhsn_data.write_parquet(bootstrap_nhsn_data_path)
 
-    model_run_dir = Path(bootstrap_private_data_dir, bootstrap_loc)
-    model_run_dir.mkdir(parents=True, exist_ok=True)
+        model_run_dir = temp_dir / bootstrap_loc
+        model_run_dir.mkdir(parents=True, exist_ok=True)
 
-    process_and_save_loc_data(
-        loc_abb=bootstrap_loc,
-        disease=bootstrap_disease,
-        facility_level_nssp_data=bootstrap_facility_level_nssp_data.lazy(),
-        loc_level_nssp_data=bootstrap_loc_level_nssp_data.lazy(),
-        loc_level_nwss_data=bootstrap_loc_level_nwss_data,
-        report_date=max_train_date,
-        first_training_date=first_training_date,
-        last_training_date=max_train_date,
-        save_dir=model_run_dir / "data",
-        nhsn_data_path=bootstrap_nhsn_data_path,
-    )
+        process_and_save_loc_data(
+            loc_abb=bootstrap_loc,
+            disease=bootstrap_disease,
+            facility_level_nssp_data=bootstrap_facility_level_nssp_data.lazy(),
+            loc_level_nssp_data=bootstrap_loc_level_nssp_data.lazy(),
+            loc_level_nwss_data=bootstrap_loc_level_nwss_data.lazy().collect(),
+            report_date=max_train_date,
+            first_training_date=first_training_date,
+            last_training_date=max_train_date,
+            save_dir=model_run_dir / "data",
+            nhsn_data_path=bootstrap_nhsn_data_path,
+        )
 
-    shutil.copy(
-        Path("pipeline/priors/prod_priors.py"),
-        Path(model_run_dir, "priors.py"),
-    )
-    process_and_save_loc_param(
-        loc_abb=bootstrap_loc,
-        disease=bootstrap_disease,
-        loc_level_nwss_data=bootstrap_loc_level_nwss_data,
-        param_estimates=param_estimates,
-        fit_ed_visits=True,
-        save_dir=model_run_dir / "data",
-    )
-    my_data = PyrenewHEWData.from_json(
-        json_file_path=Path(model_run_dir) / "data" / "data_for_model_fit.json",
-        fit_ed_visits=True,
-        fit_hospital_admissions=True,
-        fit_wastewater=True,
-    )
+        shutil.copy(
+            Path("pipeline/priors/prod_priors.py"),
+            Path(model_run_dir, "priors.py"),
+        )
+        process_and_save_loc_param(
+            loc_abb=bootstrap_loc,
+            disease=bootstrap_disease,
+            loc_level_nwss_data=bootstrap_loc_level_nwss_data,
+            param_estimates=param_estimates,
+            fit_ed_visits=True,
+            save_dir=model_run_dir / "data",
+        )
+        my_data = PyrenewHEWData.from_json(
+            json_file_path=Path(model_run_dir) / "data" / "data_for_model_fit.json",
+            fit_ed_visits=True,
+            fit_hospital_admissions=True,
+            fit_wastewater=True,
+        )
 
-    my_model = build_pyrenew_hew_model_from_dir(
-        model_run_dir,
-        fit_ed_visits=True,
-        fit_hospital_admissions=True,
-        fit_wastewater=True,
-    )
+        my_model = build_pyrenew_hew_model_from_dir(
+            model_run_dir,
+            fit_ed_visits=True,
+            fit_hospital_admissions=True,
+            fit_wastewater=True,
+        )
 
-    state_disease_key = pl.DataFrame(
-        itertools.product(states_to_simulate, diseases_to_simulate),
-        schema=["state", "disease"],
-    ).with_row_index("draw")
+        state_disease_key = pl.DataFrame(
+            itertools.product(states_to_simulate, diseases_to_simulate),
+            schema=["state", "disease"],
+        ).with_row_index("draw")
 
-    max_draw = state_disease_key.height
+        max_draw = state_disease_key.height
 
-    prior_predictive_samples = my_model.prior_predictive(
-        rng_key=jr.key(20),
-        numpyro_predictive_args={"num_samples": max_draw},
-        data=my_data.to_forecast_data(n_forecast_points=n_forecast_days),
-        sample_ed_visits=True,
-        sample_hospital_admissions=True,
-        sample_wastewater=True,
-    )
+        prior_predictive_samples = my_model.prior_predictive(
+            rng_key=jr.key(20),
+            numpyro_predictive_args={"num_samples": max_draw},
+            data=my_data.to_forecast_data(n_forecast_points=n_forecast_days),
+            sample_ed_visits=True,
+            sample_hospital_admissions=True,
+            sample_wastewater=True,
+        )
 
-    idata = az.from_numpyro(
-        prior=prior_predictive_samples,
-    ).sel(draw=slice(0, max_draw - 1))
+        idata = az.from_numpyro(
+            prior=prior_predictive_samples,
+        ).sel(draw=slice(0, max_draw - 1))
 
-    return {
-        var: create_var_df(idata, var, state_disease_key)
-        for var in predictive_var_names
-    }
+        return {
+            var: create_var_df(idata, var, state_disease_key)
+            for var in predictive_var_names
+        }
 
 
 # %% param_estimates
@@ -657,11 +658,8 @@ param_estimates = create_param_estimates(
     param_estimates_cols=param_estimates_cols,
 )
 
-# %% Generate Bootstrap Data
-bootstrap_dir_name = "bootstrap_private_data"
+# %% Generate private data only (bootstrap functionality removed)
 private_data_dir_name = "private_data"
-bootstrap_private_data_dir = Path(base_dir, bootstrap_dir_name)
-bootstrap_private_data_dir.mkdir(parents=True, exist_ok=True)
 
 private_data_dir = Path(base_dir, private_data_dir_name)
 private_data_dir.mkdir(parents=True, exist_ok=True)
@@ -696,7 +694,6 @@ dfs_ref_subpop = simulate_data_from_bootstrap(
     loc_level_nwss_data_columns,
     n_training_weeks,
     nhsn_cols,
-    bootstrap_private_data_dir,
     param_estimates.lazy(),
     n_forecast_days,
     predictive_var_names,
@@ -714,7 +711,6 @@ dfs_no_ref_subpop = simulate_data_from_bootstrap(
     loc_level_nwss_data_columns,
     n_training_weeks,
     nhsn_cols,
-    bootstrap_private_data_dir,
     param_estimates.lazy(),
     n_forecast_days,
     predictive_var_names,
