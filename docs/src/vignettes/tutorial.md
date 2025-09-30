@@ -40,46 +40,47 @@ forecasting problem.
 
 When forecasting a time series
 
-```math
+$$
 X_T[1:T] = (X_{t,T})_{t=1:T}
-```
+$$
 
 on report date $T$ we split between data on a backwards horizon $D$ where we
 consider older data “confirmed”
 
-```math
+$$
 X_T[1:(T-D)] = (X_{t,T})_{t=1:(T-D)}
-```
+$$
 
-And that we don’t expect any further revision to; that is we expect that
-
-```math
+that we don’t expect any further revision to; that is we expect that
+$$
 X_T[1:(T-D)] = X_\infty[1:(T-D)].
-```
+$$
 
-The rest of the data we consider “unconfirmed” $X_T[(T-D+1):T]$ where we expect potentially significant future revisions and $X_T[(T-D+1):T] \neq X_\infty[(T-D+1):T]$.
+The rest of the data we consider
+“unconfirmed” $X_T[(T-D+1):T]$ where we expect potentially significant
+future revisions and $X_T[(T-D+1):T] \neq X_\infty[(T-D+1):T]$.
 
 Suppose, we have a nowcasting model that generates $K$ samples that
 forecast the *eventual* time series over the uncertain data period the
 $k$th sample being
 
-```math
-X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T}
-```
+$$
+X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T};
+$$
 
 for example by sampling from the posterior distribution. Then we can improve
 our `AutoGP` forecasting for the *eventual* value on reference date
 $f > T$ by replacing our “naive” forecast distribution:
 
-```math
+$$
 \mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
-```
+$$
 
-with the nowcast estimates for the uncertain data:
+with the nowcast estimate for the uncertain data:
 
-```math
+$$
 \mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T])
-```
+$$
 
 This kind of forecasting is particularly convenient for `AutoGP`: we can
 use the standard end-to-end inference for the confirmed data and then
@@ -213,6 +214,9 @@ ylims!(ax, 0, 2.2e4)
 resize_to_layout!(fig)
 fig
 ```
+
+<img src="../assets/tutorial/cell-5-output-1.png"
+width="800" height="600" />
 
 ### Training data
 
@@ -394,7 +398,8 @@ plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different
     )
 ```
 
-![This figure shows nowcasting problem](../assets/tutorial/cell-10-output-1.png)
+<img src="../assets/tutorial/cell-10-output-1.png"
+width="1000" height="700" />
 
 ### Approach 2: Removing uncertain data
 
@@ -434,7 +439,8 @@ plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from 
     )
 ```
 
-![Forecasts from Different Report Dates (Leave out last week)](../assets/tutorial/cell-12-output-1.png)
+<img src="../assets/tutorial/cell-12-output-1.png"
+width="1000" height="700" />
 
 ### Approach 3: Forecasting with a simple nowcast
 
@@ -495,18 +501,23 @@ plot_with_forecasts(nowcast_forecasts_by_reference_date, "Forecasts from Differe
     )
 ```
 
-![Forecasts from Different Report Dates (Simple Nowcast)](../assets/tutorial/cell-14-output-1.png)
+<img src="../assets/tutorial/cell-14-output-1.png"
+width="1000" height="700" />
 
 ## Scoring
 
-To evaluate the quality of our different forecasting approaches, we use proper scoring rules.
-A proper scoring rule is a function that assigns a numerical score to a probabilistic forecast, with the property that the score is optimized (in expectation) when the forecast distribution matches the true future data distribution.
+To evaluate the quality of our different forecasting approaches, we use
+proper scoring rules. A proper scoring rule is a function that assigns a
+numerical score to a probabilistic forecast, with the property that the
+score is optimized (in expectation) when the forecast distribution
+matches the true future data distribution.
 
-The **Continuous Ranked Probability Score (CRPS)** is a proper scoring rule that generalizes the absolute error to probabilistic forecasts. For a forecast distribution $F(x) = P(X \leq x)$ and observed outcome $y$, the CRPS is defined as:
+The **Continuous Ranked Probability Score (CRPS)** is a proper scoring
+rule that generalizes the absolute error to probabilistic forecasts. For
+a forecast distribution $F(x) = P(X \leq x)$ and observed outcome $y$,
+the CRPS is defined as:
 
-```math
-\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]
-```
+$$\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]$$
 
 where the first term measures the distance between the forecast ensemble
 and the observation, and the second term measures the spread of the
@@ -521,7 +532,9 @@ package, which provides robust implementations of proper scoring rules,
 forecast evaluation diagnostics, and visualization tools specifically
 designed for epidemiological forecasting.
 
-Let's implement a simple CRPS function and functions for getting the mean CRPS score over reporting dates and forecast horizons in order to compare our three forecasting approaches:
+Let’s implement a simple CRPS function and functions for getting the
+mean CRPS score over reporting dates and forecast horizons in order to
+compare our three forecasting approaches:
 
 ``` julia
 function crps(y::Real, X::Vector{<:Real})
@@ -617,8 +630,13 @@ resize_to_layout!(fig)
 fig
 ```
 
-![Score ratios comparison (relative to simple nowcast baseline)](../assets/tutorial/cell-17-output-1.png)
-
+<figure>
+<img src="../assets/tutorial/cell-17-output-1.png"
+width="600" height="400"
+alt="Score ratios comparison (relative to simple nowcast baseline)" />
+<figcaption aria-hidden="true">Score ratios comparison (relative to
+simple nowcast baseline)</figcaption>
+</figure>
 
 ### Results and Interpretation
 
@@ -626,7 +644,7 @@ The score ratios clearly show the improvement over this tutorial:
 
 1.  **Naive forecasting performs worst** - The score ratio shows that
     naive forecasting is significantly worse than the nowcast baseline
-    (ratio > 1), demonstrating that using the most recent reported data
+    (ratio \> 1), demonstrating that using the most recent reported data
     without any adjustment for reporting delays leads to systematically
     poor forecast accuracy. This approach fails to account for the known
     issue that recent hospitalizations are significantly under-reported.
