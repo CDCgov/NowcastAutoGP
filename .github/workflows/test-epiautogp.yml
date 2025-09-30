@@ -1,0 +1,32 @@
+name: Test EpiAutoGP
+
+on:
+  push:
+    branches: [ deployment ]
+  pull_request:
+    branches: [ deployment ]
+    paths:
+      - 'EpiAutoGP/**'
+      - '.github/workflows/test-epiautogp.yml'
+
+jobs:
+  test-epiautogp:
+    name: EpiAutoGP Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: julia-actions/setup-julia@v2
+        with:
+          version: '1'
+          arch: x64
+
+      - uses: julia-actions/cache@v2
+
+      # Build and test EpiAutoGP
+      - name: Instantiate EpiAutoGP package
+        run: julia --project=EpiAutoGP -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+
+      - name: Run EpiAutoGP tests
+        run: julia --project=EpiAutoGP -e 'using Pkg; Pkg.test()'
