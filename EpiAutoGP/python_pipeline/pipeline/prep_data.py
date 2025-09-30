@@ -4,9 +4,10 @@ import logging
 import os
 import subprocess
 import tempfile
-from datetime import datetime
+from datetime import date
 from logging import Logger
 from pathlib import Path
+from typing import Optional
 
 import forecasttools
 import jax.numpy as jnp
@@ -23,13 +24,13 @@ _inverse_disease_map = {v: k for k, v in _disease_map.items()}
 
 
 def get_nhsn(
-    start_date: datetime.date,
-    end_date: datetime.date,
+    start_date: date,
+    end_date: date,
     disease: str,
     loc_abb: str,
-    temp_dir: Path = None,
-    credentials_dict: dict = None,
-    local_data_file: Path = None,
+    temp_dir: Optional[Path] = None,
+    credentials_dict: Optional[dict] = None,
+    local_data_file: Optional[Path] = None,
 ) -> pl.DataFrame:
     """
     Retrieve hospital admissions data from the National Healthcare Safety Network (NHSN).
@@ -40,9 +41,9 @@ def get_nhsn(
 
     Parameters
     ----------
-    start_date : datetime.date
+    start_date : date
         Beginning date for data retrieval (inclusive)
-    end_date : datetime.date
+    end_date : date
         End date for data retrieval (inclusive)
     disease : str
         Disease name, must be one of: "COVID-19", "Influenza", "RSV"
@@ -83,7 +84,7 @@ def get_nhsn(
     """
     if local_data_file is None:
         if temp_dir is None:
-            temp_dir = tempfile.mkdtemp()
+            temp_dir = Path(tempfile.mkdtemp())
         if credentials_dict is None:
             credentials_dict = dict()
 
@@ -146,7 +147,7 @@ def combine_surveillance_data(
     nssp_data: pl.DataFrame,
     nhsn_data: pl.DataFrame,
     disease: str,
-    nwss_data: pl.DataFrame = None,
+    nwss_data: Optional[pl.DataFrame] = None,
 ):
     """
     Combine multiple surveillance data streams into a unified long-format dataset.
@@ -277,7 +278,7 @@ def combine_surveillance_data(
 def aggregate_to_national(
     data: pl.LazyFrame,
     geo_values_to_include: list[str],
-    first_date_to_include: datetime.date,
+    first_date_to_include: date,
     national_geo_value="US",
 ):
     assert national_geo_value not in geo_values_to_include
@@ -295,7 +296,7 @@ def process_loc_level_data(
     loc_level_nssp_data: pl.LazyFrame,
     loc_abb: str,
     disease: str,
-    first_training_date: datetime.date,
+    first_training_date: date,
     loc_pop_df: pl.DataFrame,
 ) -> pl.DataFrame:
     logging.basicConfig(level=logging.INFO)
@@ -432,8 +433,8 @@ def get_pmfs(
     param_estimates: pl.LazyFrame,
     loc_abb: str,
     disease: str,
-    as_of: dt.date = None,
-    reference_date: dt.date = None,
+    as_of: date = None,
+    reference_date: date = None,
     right_truncation_required: bool = True,
 ) -> dict[str, list]:
     """
@@ -459,12 +460,12 @@ def get_pmfs(
     disease : str
         Name of the disease.
 
-    as_of : datetime.date, optional
+    as_of : date, optional
         Date for which parameters must be valid
         (start_date <= as_of <= end_date). Defaults
         to the most recent estimates.
 
-    reference_date : datetime.date, optional
+    reference_date : date, optional
         The reference date for right truncation estimates.
         Defaults to as_of value. Selects the most recent estimate
         with reference_date <= this value.
@@ -544,16 +545,16 @@ def get_pmfs(
 def process_and_save_loc_data(
     loc_abb: str,
     disease: str,
-    report_date: datetime.date,
-    first_training_date: datetime.date,
-    last_training_date: datetime.date,
+    report_date: date,
+    first_training_date: date,
+    last_training_date: date,
     save_dir: Path,
-    logger: Logger = None,
-    facility_level_nssp_data: pl.LazyFrame = None,
-    loc_level_nssp_data: pl.LazyFrame = None,
-    loc_level_nwss_data: pl.LazyFrame = None,
-    credentials_dict: dict = None,
-    nhsn_data_path: Path | str = None,
+    logger: Logger | None = None,
+    facility_level_nssp_data: pl.LazyFrame | None = None,
+    loc_level_nssp_data: pl.LazyFrame | None = None,
+    loc_level_nwss_data: pl.DataFrame | None = None,
+    credentials_dict: dict | None = None,
+    nhsn_data_path: Path | str | None = None,
 ) -> None:
     """
     Process and save surveillance data for a specific location and disease for model fitting.
@@ -568,11 +569,11 @@ def process_and_save_loc_data(
         Location abbreviation (e.g., "CA", "TX", "US" for national level)
     disease : str
         Disease name, must be one of: "COVID-19", "Influenza", "RSV"
-    report_date : datetime.date
+    report_date : date
         Reference date for the analysis (typically the current date)
-    first_training_date : datetime.date
+    first_training_date : date
         Start date for the training data period
-    last_training_date : datetime.date
+    last_training_date : date
         End date for the training data period
     save_dir : Path
         Directory where processed data files will be saved
@@ -700,7 +701,7 @@ def process_and_save_loc_data(
     combined_training_dat = combine_surveillance_data(
         nssp_data=nssp_training_data,
         nhsn_data=nhsn_training_data,
-        nwss_data=loc_level_nwss_data,
+        nwss_data=loc_level_nwss_data if loc_level_nwss_data is not None else None,
         disease=disease,
     )
 

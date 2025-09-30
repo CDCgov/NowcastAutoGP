@@ -3,6 +3,8 @@ import datetime as dt
 import itertools
 import shutil
 from pathlib import Path
+from typing import cast
+
 
 import arviz as az
 import forecasttools
@@ -29,10 +31,12 @@ from datetime import date
 # Store the original date_range function
 _original_date_range = pl.date_range
 
-def _patched_date_range(start, end, interval="1d", *, closed="both", eager=False, **kwargs):
+def _patched_date_range(start, end, interval="1d", *, closed="both", eager=False):
     """
     Patched version of polars.date_range that converts numpy.datetime64 to Python date objects.
     """
+    from polars._typing import ClosedInterval
+    
     def convert_datetime(dt):
         if isinstance(dt, np.datetime64):
             # Convert numpy.datetime64 to Python date
@@ -45,8 +49,11 @@ def _patched_date_range(start, end, interval="1d", *, closed="both", eager=False
     if end is not None:
         end = convert_datetime(end)
     
+    # Ensure closed parameter is properly typed
+    closed_typed: ClosedInterval = closed  # type: ignore
+    
     # Call the original function with converted dates
-    return _original_date_range(start=start, end=end, interval=interval, closed=closed, eager=eager, **kwargs)
+    return _original_date_range(start=start, end=end, interval=interval, closed=closed_typed, eager=eager)
 
 # Replace the polars.date_range function with our patched version
 pl.date_range = _patched_date_range
@@ -211,7 +218,7 @@ def create_var_df(idata: az.InferenceData, var: str, state_disease_key: pl.DataF
     """
     df = (
         pl.from_pandas(
-            idata.prior[var].to_dataframe(),
+            idata.prior[var].to_dataframe(), # type: ignore
             include_index=True,
         )
         .join(state_disease_key, on="draw")
@@ -461,13 +468,16 @@ def simulate_data_from_bootstrap(
         .unique()
     )
 
-    first_training_date = bootstrap_loc_level_nssp_data.get_column(
-        "reference_date"
-    ).min()
     
-    # Convert numpy.datetime64 to Python date object to avoid polars compatibility issues
-    if isinstance(first_training_date, np.datetime64):
-        first_training_date = first_training_date.astype('datetime64[D]').astype('O')
+    # Get the minimum date from the reference_date column and ensure it's a proper date object
+    first_training_date_raw = bootstrap_loc_level_nssp_data.get_column("reference_date").min()
+    
+    # Convert to Python date object to avoid polars compatibility issues downstream
+    if isinstance(first_training_date_raw, np.datetime64):
+        first_training_date = cast(dt.date, first_training_date_raw.astype('datetime64[D]').astype('O'))
+    else:
+        # For other types, try to convert or use as-is
+        first_training_date = cast(dt.date, first_training_date_raw)
 
     # loc_level_nwss_data
     bootstrap_nwss_etl_base = (
@@ -625,8 +635,11 @@ def simulate_data_from_bootstrap(
             prior=prior_predictive_samples,
         ).sel(draw=slice(0, max_draw - 1))
 
+        # Cast to ensure pylance knows idata is not None
+        idata_non_null = cast(az.InferenceData, idata)
+
         return {
-            var: create_var_df(idata, var, state_disease_key)
+            var: create_var_df(idata_non_null, var, state_disease_key)
             for var in predictive_var_names
         }
 
