@@ -464,6 +464,10 @@ def simulate_data_from_bootstrap(
     first_training_date = bootstrap_loc_level_nssp_data.get_column(
         "reference_date"
     ).min()
+    
+    # Convert numpy.datetime64 to Python date object to avoid polars compatibility issues
+    if isinstance(first_training_date, np.datetime64):
+        first_training_date = first_training_date.astype('datetime64[D]').astype('O')
 
     # loc_level_nwss_data
     bootstrap_nwss_etl_base = (
