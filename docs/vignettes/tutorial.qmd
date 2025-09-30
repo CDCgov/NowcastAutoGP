@@ -25,37 +25,63 @@ The reason for the uncertainty is that despite _eventually_ having a record of s
 
 ## What is Nowcasting?
 
-Nowcasting is a form of forecasting aimed at the question: *"What will be the eventual value of my time series, given recent reporting?"*
+The time series Gaussian process structure discovery and ensemble
+forecast package [`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) is
+highly impressive, but doesn’t include features for ingesting the kind
+of data we expect from a signal that needs significant nowcasting to
+become reliable.
 
-From our perspective common applications are:
+`NowcastAutoGP` is an extension of `AutoGP` that uses `AutoGP`’s
+incremental inference features to include nowcasting results into the
+forecasting problem.
 
-- COVID-19/Influenza/RSV hospital admissions
-- COVID-19/Influenza/RSV Emergency department visits
-- Real-time monitoring of reproductive numbers $R_t$
+When forecasting a time series
 
-## The purpose of `NowcastAutoGP`
+$$
+X_T[1:T] = (X_{t,T})_{t=1:T}
+$$
 
-The time series Gaussian process structure discovery and ensemble forecast package [`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) is highly impressive, but doesn't include features for ingesting the kind of data we expect from a signal that needs significant nowcasting to become reliable.
+on report date $T$ we split between data on a backwards horizon $D$ where we
+consider older data “confirmed”
 
-`NowcastAutoGP` is an extension of `AutoGP` that uses `AutoGP`'s incremental inference features to include nowcasting results into the forecasting problem.
+$$
+X_T[1:(T-D)] = (X_{t,T})_{t=1:(T-D)}
+$$
 
-When forecasting a time series $X_T[1:T] = (X_{t,T})_{t=1:T}$ on report date $T$ we split between data on a backwards horizon $D$ where we consider older data "confirmed" $X_T[1:(T-D)] = (X_{t,T})_{t=1:(T-D)}$ that we don't expect any further revision to; that is we expect that $X_T[1:(T-D)] = X_\infty[1:(T-D)]$.
-The rest of the data we consider "unconfirmed" $X_T[(T-D+1):T]$ where we expect potentially significant future revisions and $X_T[(T-D+1):T] \neq X_\infty[(T-D+1):T]$.
+that we don’t expect any further revision to; that is we expect that
+$$
+X_T[1:(T-D)] = X_\infty[1:(T-D)].
+$$
 
-Suppose, we have a nowcasting model that generates $K$ samples that forecast the _eventual_ time series over the uncertain data period the $k$th sample being $X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T}$; for example by sampling from the posterior distribution.
-Then we can improve our `AutoGP` forecasting for the _eventual_ value on reference date $f > T$ by replacing our "naive" forecast distribution:
+The rest of the data we consider
+“unconfirmed” $X_T[(T-D+1):T]$ where we expect potentially significant
+future revisions and $X_T[(T-D+1):T] \neq X_\infty[(T-D+1):T]$.
+
+Suppose, we have a nowcasting model that generates $K$ samples that
+forecast the *eventual* time series over the uncertain data period the
+$k$th sample being
+
+$$
+X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T};
+$$
+
+for example by sampling from the posterior distribution. Then we can improve
+our `AutoGP` forecasting for the *eventual* value on reference date
+$f > T$ by replacing our “naive” forecast distribution:
 
 $$
 \mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
 $$
 
-with the nowcast estimate for the
+with the nowcast estimate for the uncertain data:
 
 $$
 \mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T])
 $$
 
-This kind of forecasting is particularly convenient for `AutoGP`: we can use the standard end-to-end inference for the confirmed data and then batch over the sampled nowcasts using incremental inference.
+This kind of forecasting is particularly convenient for `AutoGP`: we can
+use the standard end-to-end inference for the confirmed data and then
+batch over the sampled nowcasts using incremental inference.
 
 ## Methodology overview
 
@@ -112,6 +138,7 @@ nhsn_vintage_covid_data = @mutate(nhsn_vintage_covid_data, time_index = d2index(
 We see that the most recent report date, especially, is often revised upward eventually.
 
 ```{julia}
+#| output: true
 unique_report_dates = sort(unique(nhsn_vintage_covid_data.report_date))
 # Select every 4th report date, but always include the latest one
 selected_dates = unique_report_dates[1:4:end]
