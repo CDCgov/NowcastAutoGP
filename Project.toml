@@ -11,7 +11,7 @@ LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 
 [compat]
 julia = "1.10"
-AutoGP = "0.1.10"
+AutoGP = "0.1.13"
 BoxCox = "0.3.7"
 Dates = "1.10"
 LogExpFunctions = "0.3.29"
