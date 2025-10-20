@@ -380,6 +380,7 @@ docs/site/
 .DS_Store
 .vscode/settings.json
 Manifest.toml
+Manifest*.toml
 development.md
 doc_development.md
 test_development.md
