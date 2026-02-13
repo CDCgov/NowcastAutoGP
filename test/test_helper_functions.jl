@@ -145,7 +145,7 @@ end
 
 @testitem "get_transformations Percentage with data with zeros" setup = [DataSnippet] begin
     forward_transform,
-    inverse_transform = get_transformations("percentage", values_with_zero)
+        inverse_transform = get_transformations("percentage", values_with_zero)
 
     # Test that we get functions
     @test isa(forward_transform, Function)
@@ -357,7 +357,7 @@ end
 
     # Test positive transformation
     forward_transform,
-    inverse_transform = get_transformations("positive", int_values_with_zeros)
+        inverse_transform = get_transformations("positive", int_values_with_zeros)
 
     @test isa(forward_transform, Function)
     @test isa(inverse_transform, Function)
@@ -376,7 +376,7 @@ end
 
     # Test BoxCox transformation with integer zeros
     forward_transform,
-    inverse_transform = get_transformations("boxcox", int_values_with_zeros)
+        inverse_transform = get_transformations("boxcox", int_values_with_zeros)
 
     for val in int_values_with_zeros
         transformed = forward_transform(val)
@@ -391,7 +391,7 @@ end
     # Test percentage transformation with integer zeros
     int_percentages_with_zeros = [0, 10, 25, 50, 75, 90]
     forward_transform,
-    inverse_transform = get_transformations("percentage", int_percentages_with_zeros)
+        inverse_transform = get_transformations("percentage", int_percentages_with_zeros)
 
     for val in int_percentages_with_zeros
         transformed = forward_transform(val)

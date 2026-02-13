@@ -39,12 +39,13 @@ repos:
     args: [--aosp,--autofix]
 #####
 # Julia
-# Due to lack of first-class Julia support, this needs Julia local install
-#   and JuliaFormatter.jl installed in the library
-# - repo: https://github.com/domluna/JuliaFormatter.jl
-#   rev: v1.0.39
-#   hooks:
-#   - id: julia-formatter
+# runic runs with an independent JULIA_LOAD_PATH but can interface with a global
+# startup file. If you are using one, make sure to put startup code in a
+# `if isinteractive() ... end` block to avoid issues with pre-commit
+- repo: https://github.com/fredrikekre/runic-pre-commit
+  rev: v2.0.1
+  hooks:
+  - id: runic
 #####
 # Secrets
 -   repo: https://github.com/Yelp/detect-secrets

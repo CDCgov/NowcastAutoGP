@@ -14,7 +14,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "Getting started" => "vignettes/tutorial.md",
-        "API Reference" => "api.md"
+        "API Reference" => "api.md",
     ],
     clean = true,
     checkdocs = :exports
