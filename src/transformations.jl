@@ -134,12 +134,12 @@ forward, inverse = get_transformations("boxcox", values)
 """
 function get_transformations(
         transform_name::String, values::Vector{F}
-) where {F <: Real}
+    ) where {F <: Real}
     offset = _get_offset(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (
-            y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F))
+            y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)),
         )
     elseif transform_name == "positive"
         @info "Using positive transformation with offset = $offset"

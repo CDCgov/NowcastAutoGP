@@ -9,7 +9,7 @@
 
     # Proportion data for logit transformation testing
     prop_values = 0.1 .+ 0.8 * (1:length(dates)) / length(dates) .+
-                  0.05 * randn(length(dates))
+        0.05 * randn(length(dates))
     prop_values = clamp.(prop_values, 0.01, 0.99)  # Keep in valid range
 
     # Test parameters for fast model fitting

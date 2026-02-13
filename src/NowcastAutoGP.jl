@@ -5,7 +5,7 @@ using LogExpFunctions: logit, logistic
 
 export TData
 export create_transformed_data, get_transformations, make_and_fit_model, forecast,
-       forecast_with_nowcasts, create_nowcast_data
+    forecast_with_nowcasts, create_nowcast_data
 
 include("transformations.jl")
 include("TData.jl")

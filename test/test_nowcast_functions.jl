@@ -10,9 +10,11 @@
 
     # Test data for create_nowcast_data
     nowcasts_vec = [[10.0, 11.0, 12.0], [9.5, 10.8, 11.2], [10.2, 11.1, 12.1]]
-    nowcasts_matrix = [10.0 9.5 10.2;
-                       11.0 10.8 11.1;
-                       12.0 11.2 12.1]
+    nowcasts_matrix = [
+        10.0 9.5 10.2;
+        11.0 10.8 11.1;
+        12.0 11.2 12.1
+    ]
 
     # Data for transformation testing
     transform_vec = [[1.0, 2.0], [1.5, 2.5]]
@@ -35,7 +37,7 @@ end
     nowcast_dates = [Date(2024, 1, 11), Date(2024, 1, 12)]
     nowcast_scenarios_multi = [
         TData(nowcast_dates, [12.0, 13.0]; transformation = x -> x),
-        TData(nowcast_dates, [11.5, 12.8]; transformation = x -> x)
+        TData(nowcast_dates, [11.5, 12.8]; transformation = x -> x),
     ]
 
     single_nowcast_dates = [Date(2024, 1, 11)]
@@ -209,7 +211,7 @@ end
 @testitem "forecast_with_nowcasts Multiple Forecast Dates" setup = [ForecastingWithNowcastsData] begin
     nowcast_scenarios = [
         TData(single_nowcast_dates, [12.0]; transformation = x -> x),
-        TData(single_nowcast_dates, [11.8]; transformation = x -> x)
+        TData(single_nowcast_dates, [11.8]; transformation = x -> x),
     ]
     forecast_draws_per_nowcast = 3
 
