@@ -25,7 +25,8 @@ nowcast_data = create_nowcast_data(nowcasts, dates; transformation = log)
 ```
 """
 function create_nowcast_data(
-        nowcasts::AbstractVector, dates::Vector{Date}; transformation = y -> y)
+        nowcasts::AbstractVector, dates::Vector{Date}; transformation = y -> y
+)
     @assert all(length.(nowcasts) .== length(dates)) "Length of each nowcast must match length of dates"
     @assert !isempty(nowcasts) "nowcasts must not be empty"
     # Check all vectors have the same length
@@ -68,7 +69,8 @@ nowcast_data = create_nowcast_data(nowcasts, dates; transformation = log)
 ```
 """
 function create_nowcast_data(
-        nowcasts::AbstractMatrix, dates::Vector{Date}; transformation = y -> y)
+        nowcasts::AbstractMatrix, dates::Vector{Date}; transformation = y -> y
+)
     _nowcasts = eachcol(nowcasts) |> collect
     return create_nowcast_data(_nowcasts, dates; transformation)
 end

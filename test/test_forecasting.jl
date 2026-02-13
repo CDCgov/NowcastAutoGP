@@ -29,7 +29,7 @@
     model_logit = make_and_fit_model(data_logit; minimal_params...)
 end
 
-@testitem "forecast Basic Functionality" setup=[ForecastingData] begin
+@testitem "forecast Basic Functionality" setup = [ForecastingData] begin
     # Generate forecasts
     forecasts = forecast(model, forecast_dates, 10)
 
@@ -38,7 +38,7 @@ end
     @test eltype(forecasts) <: Real
 end
 
-@testitem "forecast Different Horizons" setup=[ForecastingData] begin
+@testitem "forecast Different Horizons" setup = [ForecastingData] begin
     # Test short horizon
     forecasts_short = forecast(model, short_dates, 5)
     @test size(forecasts_short) == (1, 5)
@@ -48,7 +48,7 @@ end
     @test size(forecasts_long) == (length(long_dates), 5)
 end
 
-@testitem "forecast Different Draw Counts" setup=[ForecastingData] begin
+@testitem "forecast Different Draw Counts" setup = [ForecastingData] begin
     test_dates = forecast_dates[1:3]
 
     # Test with few draws
@@ -60,7 +60,7 @@ end
     @test size(forecasts_many, 2) == 100
 end
 
-@testitem "forecast Inverse Transformation" setup=[ForecastingData] begin
+@testitem "forecast Inverse Transformation" setup = [ForecastingData] begin
     test_dates = forecast_dates[1:2]
 
     # Test with identity transformation (default)
@@ -75,16 +75,17 @@ end
     @test all(forecasts_exp .> 0)
 end
 
-@testitem "forecast Logistic Transformation" setup=[ForecastingData] begin
+@testitem "forecast Logistic Transformation" setup = [ForecastingData] begin
     # Apply logistic inverse transformation to logit-transformed model
     forecasts_logistic = forecast(
-        model_logit, short_dates, 5; inv_transformation = logistic)
+        model_logit, short_dates, 5; inv_transformation = logistic
+    )
 
     # All forecasts should be between 0 and 1 after logistic transformation
     @test all(0 .< forecasts_logistic .< 1)
 end
 
-@testitem "forecast Edge Cases" setup=[ForecastingData] begin
+@testitem "forecast Edge Cases" setup = [ForecastingData] begin
     # Test with single draw
     forecasts_single = forecast(model, short_dates, 1)
     @test size(forecasts_single) == (1, 1)
@@ -94,7 +95,7 @@ end
     @test size(forecasts_single_date) == (1, 10)
 end
 
-@testitem "forecast Consistency" setup=[ForecastingData] begin
+@testitem "forecast Consistency" setup = [ForecastingData] begin
     test_dates = forecast_dates[1:2]
 
     # Multiple runs should give different results (stochastic)

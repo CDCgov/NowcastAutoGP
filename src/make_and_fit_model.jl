@@ -1,4 +1,3 @@
-
 """
     make_and_fit_model(data; n_particles=8, smc_data_proportion=0.1, n_mcmc=200, n_hmc=50, kwargs...)
 
@@ -15,8 +14,10 @@ Create and fit a Gaussian Process (GP) model using Sequential Monte Carlo (SMC) 
 # Returns
 - `model`: The fitted GP model.
 """
-function make_and_fit_model(data::TData; n_particles = 8, smc_data_proportion = 0.1,
-        n_mcmc = 200, n_hmc = 50, kwargs...)
+function make_and_fit_model(
+        data::TData; n_particles = 8, smc_data_proportion = 0.1,
+        n_mcmc = 200, n_hmc = 50, kwargs...
+)
     n_train = length(data.y)
     model = AutoGP.GPModel(data.ds, data.y; n_particles = n_particles)
     # Ensure smc_data_proportion results in at least step=1 for the schedule
