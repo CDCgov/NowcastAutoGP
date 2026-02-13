@@ -1,4 +1,3 @@
-
 """
     forecast(model, forecast_dates, forecast_draws::Int)
 
@@ -62,7 +61,8 @@ forecasts = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates
 function forecast_with_nowcasts(
         base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:TData},
         forecast_dates, forecast_draws_per_nowcast::Int;
-        inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0)
+        inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0
+)
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
 
@@ -88,7 +88,8 @@ function forecast_with_nowcasts(
         # Generate forecasts for this nowcast scenario
         scenario_forecasts = forecast(
             base_model, forecast_dates, forecast_draws_per_nowcast;
-            inv_transformation = inv_transformation)
+            inv_transformation = inv_transformation
+        )
 
         # Clean up the added nowcast data to restore the model data to its original state
         AutoGP.remove_data!(base_model, nowcast.ds)

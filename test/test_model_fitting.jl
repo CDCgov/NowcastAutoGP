@@ -20,7 +20,7 @@
     minimal_params = (n_particles = 1, n_mcmc = 5, n_hmc = 3)
 end
 
-@testitem "make_and_fit_model Basic Functionality" setup=[ModelFittingData] begin
+@testitem "make_and_fit_model Basic Functionality" setup = [ModelFittingData] begin
     # Create transformed data
     data = create_transformed_data(dates, values; transformation = identity)
 
@@ -32,7 +32,7 @@ end
     @test hasfield(typeof(model), :ds) || hasfield(typeof(model), :y)  # Should have input data
 end
 
-@testitem "make_and_fit_model Custom Parameters" setup=[ModelFittingData] begin
+@testitem "make_and_fit_model Custom Parameters" setup = [ModelFittingData] begin
     # Create transformed data
     data = create_transformed_data(dates, values; transformation = identity)
 
@@ -45,17 +45,18 @@ end
     @test model isa AutoGP.GPModel
 end
 
-@testitem "make_and_fit_model Small Dataset" setup=[ModelFittingData] begin
+@testitem "make_and_fit_model Small Dataset" setup = [ModelFittingData] begin
     # Test with minimal data
     small_data = create_transformed_data(
-        small_dates, small_values; transformation = identity)
+        small_dates, small_values; transformation = identity
+    )
 
     # Should work with small dataset - use higher smc_data_proportion to avoid step=0
     model = make_and_fit_model(small_data; smc_data_proportion = 0.5, minimal_params...)
     @test model isa AutoGP.GPModel
 end
 
-@testitem "make_and_fit_model Log Transformation" setup=[ModelFittingData] begin
+@testitem "make_and_fit_model Log Transformation" setup = [ModelFittingData] begin
     # Test with log-transformed data
     data = create_transformed_data(dates, positive_values; transformation = log)
 
@@ -63,7 +64,7 @@ end
     @test model isa AutoGP.GPModel
 end
 
-@testitem "make_and_fit_model Parameter Validation" setup=[ModelFittingData] begin
+@testitem "make_and_fit_model Parameter Validation" setup = [ModelFittingData] begin
     data = create_transformed_data(dates, values; transformation = identity)
 
     # Test different smc_data_proportion values

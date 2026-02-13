@@ -59,7 +59,7 @@ struct TData{D, F}
         converted_y = convert.(F, y)
         converted_values = convert.(F, values)
 
-        new{D, F}(ds, converted_y, converted_values)
+        return new{D, F}(ds, converted_y, converted_values)
     end
 end
 
@@ -70,5 +70,5 @@ end
 Convenience function to create a `TData` instance from any iterable inputs of dates/times and values.
 """
 function create_transformed_data(ds, values; transformation)
-    TData(collect(ds), collect(values); transformation = transformation)
+    return TData(collect(ds), collect(values); transformation = transformation)
 end

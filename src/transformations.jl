@@ -10,13 +10,13 @@ function _inv_boxcox(λ::Real, offset, max_value::F) where {F}
         # Handle edge cases based on λ sign and lambda_y_plus_1 value
         if λ > 0
             # Standard case: ensure lambda_y_plus_1 > 0
-            safe_value = max(lambda_y_plus_1, 1e-10)
-            result = safe_value^(1/λ) - offset
+            safe_value = max(lambda_y_plus_1, 1.0e-10)
+            result = safe_value^(1 / λ) - offset
         elseif λ < 0
             # Negative λ case: more careful handling
-            if lambda_y_plus_1 > 1e-10
+            if lambda_y_plus_1 > 1.0e-10
                 # Normal case: lambda_y_plus_1 is sufficiently positive
-                result = lambda_y_plus_1^(1/λ) - offset
+                result = lambda_y_plus_1^(1 / λ) - offset
             else
                 # Edge case: lambda_y_plus_1 ≤ 0 or very small
                 # For negative λ, (small positive)^(negative) = very large number
@@ -27,7 +27,7 @@ function _inv_boxcox(λ::Real, offset, max_value::F) where {F}
                     result = zero(F)
                 else
                     # lambda_y_plus_1 is very small but positive
-                    clamped_result = lambda_y_plus_1^(1/λ)
+                    clamped_result = lambda_y_plus_1^(1 / λ)
                     # Clamp extremely large values to reasonable bounds
                     max_reasonable = F(1000 * max_value) # 1000x the max observed value
                     result = min(clamped_result, max_reasonable) - offset
@@ -133,12 +133,14 @@ forward, inverse = get_transformations("boxcox", values)
 - [`_inv_boxcox`](@ref): Handles inverse Box-Cox transformation with edge case handling
 """
 function get_transformations(
-        transform_name::String, values::Vector{F}) where {F <: Real}
+        transform_name::String, values::Vector{F}
+) where {F <: Real}
     offset = _get_offset(values)
     if transform_name == "percentage"
         @info "Using percentage transformation"
         return (
-            y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F)))
+            y -> logit((y + offset) / 100), y -> max(logistic(y) * 100 - offset, zero(F))
+        )
     elseif transform_name == "positive"
         @info "Using positive transformation with offset = $offset"
         return (y -> log(y + offset), y -> max(exp(y) - offset, zero(F)))
