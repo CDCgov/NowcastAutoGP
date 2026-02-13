@@ -15,3 +15,10 @@ jobs:
       with:
         use-public-rspm: true
     - uses: ./.github/actions/pre-commit
+  runic:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: fredrikekre/runic-action@v1
+      with:
+        version: '1'
