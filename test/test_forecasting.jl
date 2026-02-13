@@ -86,9 +86,17 @@ end
 end
 
 @testitem "forecast Edge Cases" setup = [ForecastingData] begin
-    # Test with single draw
-    forecasts_single = forecast(model, short_dates, 1)
+    # Test with single draw and no HMC steps
+    forecasts_single = forecast(model, short_dates, 1; forecast_n_hmc = nothing)
     @test size(forecasts_single) == (1, 1)
+
+    # Test with single draw and HMC steps
+    forecasts_single = forecast(model, short_dates, 1; forecast_n_hmc = 1)
+    @test size(forecasts_single) == (1,)
+
+    # Test with two draws and HMC steps
+    forecasts_single_hmc = forecast(model, short_dates, 2; forecast_n_hmc = 1)
+    @test size(forecasts_single_hmc) == (1, 2)
 
     # Test with single date, multiple draws
     forecasts_single_date = forecast(model, short_dates, 10)
