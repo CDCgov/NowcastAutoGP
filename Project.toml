@@ -1,7 +1,7 @@
 name = "NowcastAutoGP"
 uuid = "7e9f7f4b-f590-4c14-8324-de4fcbed18f7"
-version = "0.3.0"
 authors = ["Samuel Brand <48288458+SamuelBrand1@users.noreply.github.com>"]
+version = "0.3.0"
 
 [deps]
 AutoGP = "6eb593e7-dfb4-4e48-b98e-d7222cdf0053"
@@ -11,9 +11,9 @@ LogExpFunctions = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 
 [compat]
+julia = "1.10"
 AutoGP = "0.1.13"
 BoxCox = "0.3.7"
 Dates = "1.10"
 LogExpFunctions = "0.3.29"
 ProgressMeter = "1.11.0"
-julia = "1.10"
