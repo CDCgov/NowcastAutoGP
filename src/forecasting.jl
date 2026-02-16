@@ -11,24 +11,27 @@ Generate forecast samples from a fitted `AutoGP` model.
 # Keyword arguments
 - `inv_transformation`: Function applied elementwise to map forecasts back to the original scale (default: identity).
 - `forecast_n_hmc`: If `nothing`, draw from the current model state. If an `Int`, run that many HMC parameter steps before each draw (default: `nothing`).
+- `verbose`: If `true`, display progress information during forecasting (default: `false`).
 
 # Returns
 - A matrix of samples with size `(length(forecast_dates), forecast_draws)`.
 """
 function forecast(
         model::AutoGP.GPModel, forecast_dates, forecast_draws::Int;
-        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing
+        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing,
+        verbose::Bool = false
     )
     return _forecast(
         model, forecast_dates, forecast_draws, forecast_n_hmc;
-        inv_transformation = inv_transformation
+        inv_transformation = inv_transformation, verbose = verbose
     )
 end
 
 function _forecast(
         model, forecast_dates, forecast_draws::Int, ::Nothing;
-        inv_transformation = y -> y
+        inv_transformation = y -> y, verbose::Bool = false
     )
+    verbose && @info "Using multivariate normal forecast from current model state."
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
     dist = AutoGP.predict_mvn(model, dates_vector)
@@ -40,16 +43,19 @@ end
 
 function _forecast(
         model, forecast_dates, forecast_draws::Int, forecast_n_hmc::Int;
-        inv_transformation = y -> y
+        inv_transformation = y -> y, verbose::Bool = false
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
+    progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
     _forecasts = mapreduce(hcat, 1:forecast_draws) do _
         # Refine the GP models with HMC steps to incorporate the new data into
         # hyperparameters but not structure
         AutoGP.mcmc_parameters!(model, forecast_n_hmc)
         dist = AutoGP.predict_mvn(model, dates_vector)
-        rand(dist)
+        sample = rand(dist)
+        next!(progress)
+        sample
     end
 
     # Apply inverse transformation to the forecasts
@@ -75,6 +81,7 @@ Generate forecasts by conditioning on multiple nowcast scenarios.
 - `n_hmc`: Number of HMC parameter steps per MCMC step (default: 0). Can be `> 0` even if `n_mcmc == 0`.
 - `ess_threshold`: Effective sample size threshold for particle resampling, as a fraction of total particles (default: 0.0).
 - `forecast_n_hmc`: Number of HMC steps to run before each forecast draw (default: `nothing`). If `nothing`, no HMC steps are taken during forecasting.
+- `verbose`: If `true`, display progress information during forecasting (default: `false`).
 
 # Returns
 - A matrix with size `(length(forecast_dates), length(nowcasts) * forecast_draws_per_nowcast)`.
@@ -100,7 +107,7 @@ function forecast_with_nowcasts(
         base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:TData},
         forecast_dates, forecast_draws_per_nowcast::Int;
         inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0,
-        forecast_n_hmc::Union{Int, Nothing} = nothing
+        forecast_n_hmc::Union{Int, Nothing} = nothing, verbose::Bool = false
     )
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
@@ -125,7 +132,8 @@ function forecast_with_nowcasts(
         # Generate forecasts for this nowcast scenario
         scenario_forecasts = forecast(
             base_model, forecast_dates, forecast_draws_per_nowcast;
-            inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc
+            inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc,
+            verbose = verbose
         )
 
         # Clean up the added nowcast data to restore the model data to its original state
