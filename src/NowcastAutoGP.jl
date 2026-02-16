@@ -2,6 +2,7 @@ module NowcastAutoGP
 using AutoGP, Dates
 using BoxCox: BoxCoxTransformation, confint, fit
 using LogExpFunctions: logit, logistic
+using ProgressMeter: @showprogress, Progress, next!
 
 export TData
 export create_transformed_data, get_transformations, make_and_fit_model, forecast,

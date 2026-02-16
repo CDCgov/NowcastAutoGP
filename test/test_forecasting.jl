@@ -114,3 +114,23 @@ end
     @test size(forecasts1) == size(forecasts2)
     @test size(forecasts1) == (2, 5)
 end
+
+@testitem "forecast Verbose MVN" setup = [ForecastingData] begin
+    # Test verbose=true with forecast_n_hmc=nothing logs an info message
+    forecasts = forecast(model, forecast_dates, 5; verbose = true)
+    @test size(forecasts) == (length(forecast_dates), 5)
+
+    # Test verbose=false (default) produces correct results
+    forecasts_quiet = forecast(model, forecast_dates, 5; verbose = false)
+    @test size(forecasts_quiet) == (length(forecast_dates), 5)
+end
+
+@testitem "forecast Verbose HMC" setup = [ForecastingData] begin
+    # Test verbose=true with forecast_n_hmc shows progress meter
+    forecasts = forecast(model, short_dates, 2; forecast_n_hmc = 1, verbose = true)
+    @test size(forecasts) == (1, 2)
+
+    # Test verbose=false (default) with forecast_n_hmc
+    forecasts_quiet = forecast(model, short_dates, 2; forecast_n_hmc = 1, verbose = false)
+    @test size(forecasts_quiet) == (1, 2)
+end
