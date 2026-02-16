@@ -10,14 +10,14 @@ Generate forecast samples from a fitted `AutoGP` model.
 
 # Keyword arguments
 - `inv_transformation`: Function applied elementwise to map forecasts back to the original scale (default: identity).
-- `forecast_n_hmc`: If `nothing`, draw from the current model state. If an `Int`, run that many HMC parameter steps before each draw (default: 1).
+- `forecast_n_hmc`: If `nothing`, draw from the current model state. If an `Int`, run that many HMC parameter steps before each draw (default: `nothing`).
 
 # Returns
 - A matrix of samples with size `(length(forecast_dates), forecast_draws)`.
 """
 function forecast(
         model::AutoGP.GPModel, forecast_dates, forecast_draws::Int;
-        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = 1
+        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing
     )
     return _forecast(
         model, forecast_dates, forecast_draws, forecast_n_hmc;
@@ -74,7 +74,7 @@ Generate forecasts by conditioning on multiple nowcast scenarios.
 - `n_mcmc`: Number of MCMC structure steps after adding each nowcast (default: 0). If `> 0`, `n_hmc` must also be `> 0`.
 - `n_hmc`: Number of HMC parameter steps per MCMC step (default: 0). Can be `> 0` even if `n_mcmc == 0`.
 - `ess_threshold`: Effective sample size threshold for particle resampling, as a fraction of total particles (default: 0.0).
-- `forecast_n_hmc`: Number of HMC steps to run before each forecast draw (default: 1). If `nothing`, no HMC steps are taken before forecasting.
+- `forecast_n_hmc`: Number of HMC steps to run before each forecast draw (default: `nothing`). If `nothing`, no HMC steps are taken during forecasting.
 
 # Returns
 - A matrix with size `(length(forecast_dates), length(nowcasts) * forecast_draws_per_nowcast)`.
@@ -99,7 +99,8 @@ forecasts = forecast_with_nowcasts(base_model, nowcast_scenarios, forecast_dates
 function forecast_with_nowcasts(
         base_model::AutoGP.GPModel, nowcasts::AbstractVector{<:TData},
         forecast_dates, forecast_draws_per_nowcast::Int;
-        inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0, forecast_n_hmc::Int = 1
+        inv_transformation = y -> y, n_mcmc = 0, n_hmc = 0, ess_threshold = 0.0,
+        forecast_n_hmc::Union{Int, Nothing} = nothing
     )
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
