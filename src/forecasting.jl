@@ -58,16 +58,27 @@ function _forecast(
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
-    _forecasts = mapreduce(hcat, 1:forecast_draws) do _
+    # progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
+    # _forecasts = mapreduce(hcat, 1:forecast_draws) do _
+    #     # Refine the GP models with HMC steps to incorporate the new data into
+    #     # hyperparameters but not structure
+    #     AutoGP.mcmc_parameters!(model, forecast_n_hmc)
+    #     dist = AutoGP.predict_mvn(model, dates_vector)
+    #     sample = rand(dist)
+    #     # next!(progress)
+    #     sample
+    # end
+
+    _forecasts = []
+    for i in 1:forecast_draws
         # Refine the GP models with HMC steps to incorporate the new data into
         # hyperparameters but not structure
         AutoGP.mcmc_parameters!(model, forecast_n_hmc)
         dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
         sample = rand(dist)
-        next!(progress)
-        sample
+        push!(_forecasts, sample)
     end
+    _forecasts = hcat(_forecasts...) # Convert list of samples to matrix
 
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)

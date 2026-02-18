@@ -10,7 +10,6 @@ include("make_vignettes.jl")
 # Generate API reference documentation from docstrings in the source code
 push!(pages, "API Reference" => "api.md")
 
-
 makedocs(
     sitename = "NowcastAutoGP.jl",
     authors = "Centers for Disease Control and Prevention",

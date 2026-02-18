@@ -1,4 +1,5 @@
 [deps]
+AutoGP = "6eb593e7-dfb4-4e48-b98e-d7222cdf0053"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
@@ -6,6 +7,8 @@ Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 Literate = "98b081ad-f1c9-55d3-8b20-4c87d4299306"
 NowcastAutoGP = "7e9f7f4b-f590-4c14-8324-de4fcbed18f7"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 TidierData = "fe2206b3-d496-4ee9-a338-6a095c4ece80"
 

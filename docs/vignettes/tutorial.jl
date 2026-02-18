@@ -98,6 +98,8 @@ using NowcastAutoGP
 using CairoMakie
 using Dates, Distributions, Random
 using CSV, TidierData
+using Parameters: @unpack
+using NowcastAutoGP: make_and_fit_model
 
 Random.seed!(123)
 CairoMakie.activate!(type = "png")
@@ -110,14 +112,18 @@ We are going to demonstrate using `NowcastAutoGP` for forecasting the CDC's
 National Healthcare Safety Network (NHSN) reported Covid hospitalisations.
 We stored a vintaged data set locally.
 """
-datapath = joinpath(pkgdir(NowcastAutoGP), "docs", "vignettes", "data", "vintaged_us_nhsn_data.csv")
+datapath = joinpath(
+    pkgdir(NowcastAutoGP), "docs", "vignettes", "data", "vintaged_us_nhsn_data.csv"
+)
 nhsn_vintage_covid_data = CSV.read(datapath, DataFrame)
-
 
 unique_dates = sort(unique(nhsn_vintage_covid_data.reference_date)) # Add time_index column for plotting (1 = minimum date, 2 = next date, etc.)
 d2index(d) = (d - minimum(unique_dates)).value
 
-nhsn_vintage_covid_data = @mutate(nhsn_vintage_covid_data, time_index = d2index(reference_date))
+nhsn_vintage_covid_data = @mutate(
+    nhsn_vintage_covid_data,
+    time_index = d2index(reference_date)
+)
 @glimpse(nhsn_vintage_covid_data)
 
 md"""
@@ -135,7 +141,8 @@ n_dates = length(selected_dates)
 
 ## Create figure
 fig = Figure(size = (800, 600))
-ax = Axis(fig[1, 1],
+ax = Axis(
+    fig[1, 1],
     xlabel = "Reference Date",
     ylabel = "NHSN confirmed Covid hospitalisations",
     title = "Reference Date vs Confirm by Report Date (Oct 2024+, all US)"
@@ -151,7 +158,8 @@ for (report_date, color) in zip(selected_dates, colors)
         @arrange(reference_date)
     end
 
-    scatterlines!(ax, date_data.time_index, date_data.confirm,
+    scatterlines!(
+        ax, date_data.time_index, date_data.confirm,
         color = color,
         label = string(report_date),
         markersize = 8,
@@ -184,8 +192,10 @@ We know that some recent periods have had bad reporting for NHSN, so we
 exclude them from the training data.
 """
 
-exclusion_periods = [(Date(2024, 5, 1), Date(2024, 6, 1)),
-    (Date(2024, 10, 1), Date(2024, 11, 15))]
+exclusion_periods = [
+    (Date(2024, 5, 1), Date(2024, 6, 1)),
+    (Date(2024, 10, 1), Date(2024, 11, 15)),
+]
 
 training_data = let
     function in_any_period(d)
@@ -211,27 +221,44 @@ A `fit_on_data` function that does the core workflow on confirmed data:
    optimized Box-Cox transform to "normalize" the data.
 2. Redact some of the recent data, either for poor quality or in
    preparation for nowcasting.
-3. Passes to the `make_and_fit_model` function.
+3. Passes to the `make_and_fit_model` function from `NowcastAutoGP`.
 """
 
-function fit_on_data(report_date;
-    n_redact,
-    max_ahead = 8,
-    date_data = date_data,
-    n_particles = 24,
-    smc_data_proportion = 0.1,
-    n_mcmc = 50, n_hmc = 50)
+function fit_on_data(
+        report_date;
+        n_redact,
+        max_ahead = 8,
+        training_data = training_data,
+        n_particles = 24,
+        smc_data_proportion = 0.1,
+        n_mcmc = 50, n_hmc = 50
+    )
+
+    ## Filter for correct report date
+    date_data = @chain training_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
 
     ## Dates to forecast
-    forecast_dates = [maximum(date_data.reference_date) + Week(k) for k = 0:max_ahead]
+    forecast_dates = [maximum(date_data.reference_date) + Week(k) for k in 0:max_ahead]
 
     transformation, inv_transformation = get_transformations("boxcox", date_data.confirm)
-    data_to_fit = create_transformed_data(date_data.reference_date[1:(end - n_redact)], date_data.confirm[1:(end - n_redact)]; transformation)
-    model = make_and_fit_model(data_to_fit;
+    data_to_fit = create_transformed_data(
+        date_data.reference_date[1:(end - n_redact)],
+        date_data.confirm[1:(end - n_redact)]; transformation
+    )
+    data_to_revise = (
+        revise_dates = date_data.reference_date[(end - n_redact + 1):end],
+        revise_values = date_data.confirm[(end - n_redact + 1):end],
+    )
+    model = make_and_fit_model(
+        data_to_fit;
         n_particles,
         smc_data_proportion,
-        n_mcmc, n_hmc)
-    return model, forecast_dates, transformation, inv_transformation
+        n_mcmc, n_hmc
+    )
+    return model, forecast_dates, transformation, inv_transformation, data_to_revise
 end
 nothing #hide
 
@@ -239,20 +266,21 @@ md"""
 We also give a handy plotting utility for plotting our results.
 """
 
-function plot_with_forecasts(forecasts, title::String;
-    n_ahead,
-    selected_dates,
-    colors = colors,
-    covid_data = nhsn_vintage_covid_data,
-    plot_start_date = plot_start_date,
-    plot_end_date = plot_end_date,
-    y_lim_up = 2.2e4,
-    size = (1000, 700),
-    xticks = (tick_indices, tick_labels),
-)
-
+function plot_with_forecasts(
+        forecasts, title::String;
+        n_ahead,
+        selected_dates,
+        colors = colors,
+        covid_data = nhsn_vintage_covid_data,
+        plot_start_date = plot_start_date,
+        plot_end_date = plot_end_date,
+        y_lim_up = 2.2e4,
+        size = (1000, 700),
+        xticks = (tick_indices, tick_labels)
+    )
     fig = Figure(size = size)
-    ax = Axis(fig[1, 1],
+    ax = Axis(
+        fig[1, 1],
         xlabel = "Date",
         ylabel = "NHSN confirmed Covid hospitalizations",
         title = title
@@ -260,14 +288,14 @@ function plot_with_forecasts(forecasts, title::String;
 
     ## Plot forecasts
     for (report_date, forecast, color) in zip(selected_dates, forecasts, colors)
-
         date_data = @chain nhsn_vintage_covid_data begin
             @filter(report_date == !!report_date)
             @arrange(reference_date)
         end
 
         ## Plot historical data as light lines
-        scatterlines!(ax, date_data.time_index, date_data.confirm,
+        scatterlines!(
+            ax, date_data.time_index, date_data.confirm,
             color = color,
             linewidth = 2,
             label = "$(report_date) data"
@@ -280,15 +308,17 @@ function plot_with_forecasts(forecasts, title::String;
         forecast_indices = d2index.(forecast.dates)[1:n_ahead]
 
         ## Plot uncertainty band (25%-75%)
-        band!(ax, forecast_indices, q25, q75,
-            color = (color, 0.3),
+        band!(
+            ax, forecast_indices, q25, q75,
+            color = (color, 0.3)
         )
 
         ## Plot median forecast
-        lines!(ax, forecast_indices, median,
+        lines!(
+            ax, forecast_indices, median,
             color = color,
             linewidth = 3,
-            linestyle = :dash,
+            linestyle = :dash
         )
     end
 
@@ -303,29 +333,64 @@ end
 nothing #hide
 
 md"""
+## Fitting models on different report dates
+
+Most of the nowcasting revision happens in the most recent week, so as a first step we will fit models on different report dates redacting each most recent week.
+These fitted models represent an `AutoGP` fit to the "confirmed" data on each report date.
+In the next section we will use these fits to make forecasts with different nowcasting approaches.
+"""
+
+fitted_models_by_report_date = map(selected_dates) do report_date
+    model, forecast_dates,
+        transformation,
+        inv_transformation, data_to_revise = fit_on_data(
+        report_date;
+        n_redact = 1,
+        training_data = training_data
+    )
+    return (
+        model = model, forecast_dates = forecast_dates,
+        transformation = transformation, inv_transformation = inv_transformation,
+        data_to_revise = data_to_revise
+    )
+end
+nothing #hide
+
+md"""
 ## Forecasting
+
+In this section we will use the fitted models to make forecasts of future confirmed hospitalisations.
+We will compare four approaches:
+
+1. Forecasting naively.
+2. Removing uncertain data.
+3. Forecasting with a simple nowcast without interleaved HMC.
+4. Forecasting with a simple nowcast with interleaved HMC.
 
 ### Approach 1: Forecasting naively
 
-Naively, we could just use `AutoGP` on the latest reported data without
-considering revisions.
+Naively, we could just use the latest reported data without considering revisions.
+This approach is equivalent to creating the "nowcast" by taking the latest reported data as the best estimate of the eventual data, which is a common mistake when using data with reporting delays.
 This will be biased because we know that typically the most recent data
 will be revised upwards, but represents a common error when using this
 data stream.
 """
 
 n_forecasts = 2000
-naive_forecasts_by_reference_date = map(selected_dates) do report_date
-    ## Filter for correct report date
-    date_data = @chain training_data begin
-        @filter(report_date == !!report_date)
-        @arrange(reference_date)
-    end
-    model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-        n_redact = 0,
-        date_data = date_data,
+naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+
+    ## Create a "naive" nowcast by taking the latest reported data as the best estimate of the eventual data
+    ## NB: we wrap the single nowcast in a vector to be compatible with the nowcast input "vector of vectors" format
+    naive_nowcasts = create_nowcast_data(
+        [data_to_revise.revise_values], data_to_revise.revise_dates;
+        transformation = transformation
     )
-    forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
+
+    forecasts = forecast_with_nowcasts(
+        model, naive_nowcasts, forecast_dates, n_forecasts;
+        inv_transformation, ess_threshold = 2.0
+    )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])
@@ -341,9 +406,10 @@ When we plot we see that the unrevised data consistently underestimates
 the eventual counts, which leads to poor forecasting.
 """
 
-plot_with_forecasts(naive_forecasts_by_reference_date, "Forecasts from Different Report Dates (naive)";
+plot_with_forecasts(
+    naive_forecasts_by_reference_date, "Forecasts from Different Report Dates (naive)";
     n_ahead = 4,
-    selected_dates = selected_dates,
+    selected_dates = selected_dates
 )
 
 md"""
@@ -355,15 +421,9 @@ Therefore, another strategy could be to simply redact that week but
 otherwise leave out forecasting untouched.
 """
 
-leave_out_last_forecasts_by_reference_date = map(selected_dates) do report_date
-    date_data = @chain training_data begin
-        @filter(report_date == !!report_date)
-        @arrange(reference_date)
-    end
-    model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-        n_redact = 1,
-        date_data = date_data,
-    )
+leave_out_last_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+
     forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -378,9 +438,11 @@ md"""
 This looks improved but the forecasts have quite large prediction
 intervals (we have effectively bumped the forecast horizon by one week).
 """
-plot_with_forecasts(leave_out_last_forecasts_by_reference_date, "Forecasts from Different Report Dates (Leave out last week)";
+plot_with_forecasts(
+    leave_out_last_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Leave out last week)";
     n_ahead = 4,
-    selected_dates = selected_dates,
+    selected_dates = selected_dates
 )
 
 md"""
@@ -419,25 +481,24 @@ We compare two variants:
 """
 
 n_nowcast_samples = 100
-nowcast_no_hmc_forecasts_by_reference_date = map(selected_dates) do report_date
-    ## Filter for correct report date
-    date_data = @chain training_data begin
-        @filter(report_date == !!report_date)
-        @arrange(reference_date)
-    end
-    ## Fit on all accepted data
-    model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-        n_redact = 1,
-        date_data = date_data,
-    )
+nowcast_no_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+
     ## Simple nowcast on most recent data where we suspect significant revisions
-    nowcast_samples = [[date_data.confirm[end] * exp(0.1 + randn() * 0.027)] for _ in 1:n_nowcast_samples]
+    nowcast_samples = [
+        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
+            for _ in 1:n_nowcast_samples
+    ]
 
-    nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
-        transformation = transformation)
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
 
-    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
-        inv_transformation, forecast_n_hmc = 0)
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation
+    )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])
@@ -448,12 +509,12 @@ nowcast_no_hmc_forecasts_by_reference_date = map(selected_dates) do report_date
 end
 nothing #hide
 
-
-plot_with_forecasts(nowcast_no_hmc_forecasts_by_reference_date, "Forecasts from Different Report Dates (Nowcast, no interleaved HMC)";
+plot_with_forecasts(
+    nowcast_no_hmc_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Nowcast, no interleaved HMC)";
     n_ahead = 4,
-    selected_dates = selected_dates,
+    selected_dates = selected_dates
 )
-
 
 md"""
 #### Approach 4: Nowcast with interleaved HMC
@@ -464,25 +525,24 @@ be refined between each forecast sample, producing a more diverse and
 better-calibrated forecast ensemble.
 """
 
-nowcast_hmc_forecasts_by_reference_date = map(selected_dates) do report_date
-    ## Filter for correct report date
-    date_data = @chain training_data begin
-        @filter(report_date == !!report_date)
-        @arrange(reference_date)
-    end
-    ## Fit on all accepted data
-    model, forecast_dates, transformation, inv_transformation = fit_on_data(report_date;
-        n_redact = 1,
-        date_data = date_data,
-    )
+nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+
     ## Simple nowcast on most recent data where we suspect significant revisions
-    nowcast_samples = [[date_data.confirm[end] * exp(0.1 + randn() * 0.027)] for _ in 1:n_nowcast_samples]
+    nowcast_samples = [
+        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
+            for _ in 1:n_nowcast_samples
+    ]
 
-    nowcasts = create_nowcast_data(nowcast_samples, [date_data.reference_date[end]];
-        transformation = transformation)
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
 
-    forecasts = forecast_with_nowcasts(model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
-        inv_transformation, forecast_n_hmc = 1)
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation, forecast_n_hmc = nothing, n_hmc = 1
+    )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
         qs = quantile(fc, [0.25, 0.5, 0.75])
@@ -495,9 +555,11 @@ nothing #hide
 
 # We see that this significantly improves the forecasting visually.
 
-plot_with_forecasts(nowcast_hmc_forecasts_by_reference_date, "Forecasts from Different Report Dates (Nowcast, with interleaved HMC)";
+plot_with_forecasts(
+    nowcast_hmc_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Nowcast, with interleaved HMC)";
     n_ahead = 4,
-    selected_dates = selected_dates,
+    selected_dates = selected_dates
 )
 
 md"""
@@ -552,11 +614,14 @@ function crps(y::Real, X::Vector{<:Real})
     return term1 - 0.5 * term2
 end
 
-function score_forecast(latestdata, forecast_dates, F; max_horizon = 4, data_transform = x -> x)
+function score_forecast(
+        latestdata, forecast_dates, F; max_horizon = 4, data_transform = x -> x
+    )
     @assert max_horizon <= length(forecast_dates) "Not enough data to score full horizon"
     score_dates = forecast_dates[1:max_horizon]
     scorable_data = @filter(latestdata, reference_date in !!score_dates)
-    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y, X
+    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y,
+            X
         crps(data_transform(y), data_transform.(X))
     end
     return S / max_horizon
@@ -577,12 +642,14 @@ nothing #hide
 most_recent_report_date = maximum(selected_dates)
 latestdata = @filter(nhsn_vintage_covid_data, report_date == !!most_recent_report_date)
 
-scores = map([
-    naive_forecasts_by_reference_date,
-    leave_out_last_forecasts_by_reference_date,
-    nowcast_no_hmc_forecasts_by_reference_date,
-    nowcast_hmc_forecasts_by_reference_date,
-]) do F
+scores = map(
+    [
+        naive_forecasts_by_reference_date,
+        leave_out_last_forecasts_by_reference_date,
+        nowcast_no_hmc_forecasts_by_reference_date,
+        nowcast_hmc_forecasts_by_reference_date,
+    ]
+) do F
     score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = identity)
 end
 nothing #hide
@@ -598,7 +665,8 @@ score_ratios = [score / baseline_score for score in scores]
 method_names = ["Naive", "Leave Out\nLast", "Nowcast\n(no HMC)", "Nowcast\n(+ HMC)"]
 
 fig = Figure(size = (700, 400))
-ax = Axis(fig[1, 1],
+ax = Axis(
+    fig[1, 1],
     xlabel = "Forecasting Method",
     ylabel = "Score Ratio (lower is better)",
     title = "Forecast Performance: Score Ratios vs Nowcast + HMC"
@@ -606,16 +674,20 @@ ax = Axis(fig[1, 1],
 
 ## Create bar plot with different colors based on performance
 bar_colors = [ratio > 1 ? :red : ratio == 1 ? :green : :blue for ratio in score_ratios]
-barplot!(ax, 1:4, score_ratios,
+barplot!(
+    ax, 1:4, score_ratios,
     color = bar_colors,
     alpha = 0.7,
     strokewidth = 2,
-    strokecolor = :black)
+    strokecolor = :black
+)
 
 ## Add value labels on top of bars
 for (i, ratio) in enumerate(score_ratios)
-    text!(ax, i, ratio + 0.02, text = string(round(ratio, digits = 2)),
-        align = (:center, :bottom), fontsize = 12)
+    text!(
+        ax, i, ratio + 0.02, text = string(round(ratio, digits = 2)),
+        align = (:center, :bottom), fontsize = 12
+    )
 end
 
 ## Add horizontal line at y=1 for reference (baseline)
