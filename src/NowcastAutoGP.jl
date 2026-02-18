@@ -1,6 +1,7 @@
 module NowcastAutoGP
 using AutoGP, Dates
 using BoxCox: BoxCoxTransformation, confint, fit
+using LinearAlgebra: BLAS
 using LogExpFunctions: logit, logistic
 using ProgressMeter: @showprogress, Progress, next!
 

@@ -1,3 +1,14 @@
+"""Temporarily set BLAS threads to 1 to avoid deadlock with AutoGP's internal `Threads.@threads`."""
+function _with_single_blas(f)
+    n = BLAS.get_num_threads()
+    BLAS.set_num_threads(1)
+    try
+        return f()
+    finally
+        BLAS.set_num_threads(n)
+    end
+end
+
 """
     forecast(model, forecast_dates, forecast_draws::Int)
 
@@ -34,7 +45,7 @@ function _forecast(
     verbose && @info "Using multivariate normal forecast from current model state."
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    dist = AutoGP.predict_mvn(model, dates_vector)
+    dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
     _forecasts = rand(dist, forecast_draws)
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)
@@ -52,7 +63,7 @@ function _forecast(
         # Refine the GP models with HMC steps to incorporate the new data into
         # hyperparameters but not structure
         AutoGP.mcmc_parameters!(model, forecast_n_hmc)
-        dist = AutoGP.predict_mvn(model, dates_vector)
+        dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
         sample = rand(dist)
         next!(progress)
         sample

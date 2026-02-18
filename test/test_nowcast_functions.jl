@@ -245,6 +245,41 @@ end
     @test all(isfinite.(result2))
 end
 
+@testitem "forecast_with_nowcasts BLAS threading smoke test" begin
+    # Regression test: predict_mvn uses Threads.@threads internally, which deadlocks
+    # with multi-threaded BLAS when n_particles > 1. With n_particles = 1 (as in
+    # ForecastingWithNowcastsData), the @threads loop is trivial and the bug is hidden.
+    using Dates
+    using Random
+    Random.seed!(456)
+
+    dates = Date(2024, 1, 1):Day(1):Date(2024, 1, 10)
+    values = [10.0, 15.0, 12.0, 18.0, 22.0, 25.0, 20.0, 16.0, 14.0, 11.0]
+
+    base_data = create_transformed_data(dates, values; transformation = x -> x)
+    base_model = make_and_fit_model(base_data; n_particles = 2, n_mcmc = 5, n_hmc = 3)
+
+    nowcast_dates = [Date(2024, 1, 11), Date(2024, 1, 12)]
+    nowcasts = [TData(nowcast_dates, [12.0, 13.0]; transformation = x -> x)]
+    forecast_dates = [Date(2024, 1, 13)]
+
+    # This path triggers mcmc_structure! then predict_mvn, both using @threads
+    result = forecast_with_nowcasts(
+        base_model, nowcasts, forecast_dates, 3;
+        n_mcmc = 2, n_hmc = 2
+    )
+    @test size(result) == (1, 3)
+    @test all(isfinite.(result))
+
+    # Also exercise the forecast_n_hmc path (mcmc_parameters! + predict_mvn in a loop)
+    result_hmc = forecast_with_nowcasts(
+        base_model, nowcasts, forecast_dates, 3;
+        n_mcmc = 2, n_hmc = 2, forecast_n_hmc = 1
+    )
+    @test size(result_hmc) == (1, 3)
+    @test all(isfinite.(result_hmc))
+end
+
 @testitem "forecast_with_nowcasts Integration with create_nowcast_data" setup = [ForecastingWithNowcastsData] begin
     # Test full workflow: matrix -> nowcast data -> forecasts
     nowcast_matrix = [12.0 11.8; 13.0 12.5]  # 2 time points, 2 scenarios
