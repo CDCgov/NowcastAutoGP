@@ -229,7 +229,7 @@ function fit_on_data(
         n_redact,
         max_ahead = 8,
         training_data = training_data,
-        n_particles = 24,
+        n_particles = 4, #24,
         smc_data_proportion = 0.1,
         n_mcmc = 50, n_hmc = 50
     )
@@ -349,7 +349,7 @@ fitted_models_by_report_date = map(selected_dates) do report_date
         training_data = training_data
     )
     return (
-        model = model, forecast_dates = forecast_dates,
+        model_dict = Dict(model), forecast_dates = forecast_dates,
         transformation = transformation, inv_transformation = inv_transformation,
         data_to_revise = data_to_revise
     )
@@ -378,8 +378,8 @@ data stream.
 
 n_forecasts = 2000
 naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
-
+    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    model = GPModel(model_dict)
     ## Create a "naive" nowcast by taking the latest reported data as the best estimate of the eventual data
     ## NB: we wrap the single nowcast in a vector to be compatible with the nowcast input "vector of vectors" format
     naive_nowcasts = create_nowcast_data(
@@ -422,7 +422,8 @@ otherwise leave out forecasting untouched.
 """
 
 leave_out_last_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    model = GPModel(model_dict)
 
     forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
 
@@ -459,6 +460,19 @@ In the following examples, for each vintage we first fit to all the data
 except the most recent week (`n_redact = 1`).
 Second, we sample a multiplier for the most recent week from the
 LogNormal distribution 100 times.
+"""
+n_nowcast_samples = 100
+## Simple nowcast on most recent data where we suspect significant revisions
+
+all_nowcast_samples = map(fitted_models_by_report_date) do fitted_model
+    @unpack data_to_revise = fitted_model
+
+    nowcast_samples = [
+        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
+            for _ in 1:n_nowcast_samples
+    ]
+end
+md"""
 Third, we use `forecast_with_nowcasts` to batch 20 forecasts per
 nowcast signal on top of the inference done in step one.
 
@@ -480,15 +494,11 @@ We compare two variants:
 #### Approach 3: Nowcast without interleaved HMC
 """
 
-n_nowcast_samples = 100
-nowcast_no_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+nowcast_no_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date, all_nowcast_samples) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    model = GPModel(model_dict)
 
-    ## Simple nowcast on most recent data where we suspect significant revisions
-    nowcast_samples = [
-        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
-            for _ in 1:n_nowcast_samples
-    ]
+
 
     nowcasts = create_nowcast_data(
         nowcast_samples, [data_to_revise.revise_dates[end]];
@@ -525,14 +535,9 @@ be refined between each forecast sample, producing a more diverse and
 better-calibrated forecast ensemble.
 """
 
-nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
-
-    ## Simple nowcast on most recent data where we suspect significant revisions
-    nowcast_samples = [
-        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
-            for _ in 1:n_nowcast_samples
-    ]
+nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date, all_nowcast_samples) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    model = GPModel(model_dict)
 
     nowcasts = create_nowcast_data(
         nowcast_samples, [data_to_revise.revise_dates[end]];
@@ -541,7 +546,7 @@ nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date) do f
 
     forecasts = forecast_with_nowcasts(
         model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
-        inv_transformation, forecast_n_hmc = nothing, n_hmc = 1
+        inv_transformation, forecast_n_hmc = 1, n_hmc = 0,
     )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -650,7 +655,7 @@ scores = map(
         nowcast_hmc_forecasts_by_reference_date,
     ]
 ) do F
-    score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = identity)
+    score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = log)
 end
 nothing #hide
 
