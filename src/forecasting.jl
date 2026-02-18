@@ -32,6 +32,11 @@ function forecast(
         inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing,
         verbose::Bool = false
     )
+    if verbose
+        mode = forecast_n_hmc === nothing ? "current model state" :
+            "HMC ($forecast_n_hmc steps/draw)"
+        @info "Forecasting $(length(forecast_dates)) dates × $forecast_draws draws via $mode."
+    end
     return _forecast(
         model, forecast_dates, forecast_draws, forecast_n_hmc;
         inv_transformation = inv_transformation, verbose = verbose
@@ -42,7 +47,6 @@ function _forecast(
         model, forecast_dates, forecast_draws::Int, ::Nothing;
         inv_transformation = y -> y, verbose::Bool = false
     )
-    verbose && @info "Using multivariate normal forecast from current model state."
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
     dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
@@ -58,27 +62,16 @@ function _forecast(
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    # progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
-    # _forecasts = mapreduce(hcat, 1:forecast_draws) do _
-    #     # Refine the GP models with HMC steps to incorporate the new data into
-    #     # hyperparameters but not structure
-    #     AutoGP.mcmc_parameters!(model, forecast_n_hmc)
-    #     dist = AutoGP.predict_mvn(model, dates_vector)
-    #     sample = rand(dist)
-    #     # next!(progress)
-    #     sample
-    # end
-
-    _forecasts = []
-    for i in 1:forecast_draws
+    progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
+    _forecasts = mapreduce(hcat, 1:forecast_draws) do _
         # Refine the GP models with HMC steps to incorporate the new data into
         # hyperparameters but not structure
         AutoGP.mcmc_parameters!(model, forecast_n_hmc)
         dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
         sample = rand(dist)
-        push!(_forecasts, sample)
+        next!(progress)
+        sample
     end
-    _forecasts = hcat(_forecasts...) # Convert list of samples to matrix
 
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)
@@ -133,8 +126,11 @@ function forecast_with_nowcasts(
     )
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
+    @assert 0.0 <= ess_threshold <= 1.0 "ess_threshold must be between 0 and 1"
+    @assert forecast_n_hmc === nothing || forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
 
     base_model_dict = Dict(base_model)
+    progress = Progress(length(nowcasts); desc = "Nowcast scenarios: ", enabled = verbose)
     # Process each nowcast scenario
     forecasts_over_nowcasts = mapreduce(hcat, nowcasts) do nowcast
         model_for_batch = AutoGP.GPModel(base_model_dict) # Create a copy of the base model for this scenario
@@ -156,13 +152,14 @@ function forecast_with_nowcasts(
             AutoGP.mcmc_parameters!(model_for_batch, n_hmc)
         end
 
-        # Generate forecasts for this nowcast scenario
+        # Generate forecasts for this nowcast scenario (verbose=false to avoid per-scenario noise)
         scenario_forecasts = forecast(
             model_for_batch, forecast_dates, forecast_draws_per_nowcast;
             inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc,
-            verbose = verbose
+            verbose = false
         )
 
+        next!(progress)
         return scenario_forecasts
     end
 
