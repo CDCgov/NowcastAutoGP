@@ -98,7 +98,7 @@ Generate forecasts by conditioning on multiple nowcast scenarios.
 - A matrix with size `(length(forecast_dates), length(nowcasts) * forecast_draws_per_nowcast)`.
 
 # Notes
-- Each scenario is added, optionally refined, forecasted, and then removed to restore the model state.
+- Each scenario operates on an independent copy of the base model, so the original model is never mutated.
 - `n_mcmc == 0 && n_hmc > 0` performs parameter-only updates to the _particle ensemble_; `n_mcmc > 0 && n_hmc > 0` performs full MCMC.
 - `forecast_n_hmc` is independent of `n_mcmc` and `n_hmc` and controls HMC steps only during forecasting, not during nowcast incorporation.
 If `n_mcmc == 0 && n_hmc == 0 && forecast_n_hmc > 0`, HMC steps are only taken during forecasting, not during nowcast incorporation.
@@ -123,32 +123,34 @@ function forecast_with_nowcasts(
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
 
+    base_model_dict = Dict(base_model)
     # Process each nowcast scenario
     forecasts_over_nowcasts = mapreduce(hcat, nowcasts) do nowcast
+        model_for_batch = AutoGP.GPModel(base_model_dict) # Create a copy of the base model for this scenario
         # Add the nowcast data to the model
-        AutoGP.add_data!(base_model, nowcast.ds, nowcast.y)
+        AutoGP.add_data!(model_for_batch, nowcast.ds, nowcast.y)
 
         # Resample particles if effective sample size is below threshold
 
-        AutoGP.maybe_resample!(base_model, ess_threshold * AutoGP.num_particles(base_model))
+        AutoGP.maybe_resample!(
+            model_for_batch, ess_threshold *
+                AutoGP.num_particles(model_for_batch)
+        )
 
         # Optional: Refine the GP models with MCMC steps to incorporate the new data
         # into the kernel structure
         if n_mcmc > 0 && n_hmc > 0
-            AutoGP.mcmc_structure!(base_model, n_mcmc, n_hmc)
+            AutoGP.mcmc_structure!(model_for_batch, n_mcmc, n_hmc)
         elseif n_mcmc == 0 && n_hmc > 0 # Optional: Refine the GP models with HMC steps to incorporate the new data into hyperparameters but not structure
-            AutoGP.mcmc_parameters!(base_model, n_hmc)
+            AutoGP.mcmc_parameters!(model_for_batch, n_hmc)
         end
 
         # Generate forecasts for this nowcast scenario
         scenario_forecasts = forecast(
-            base_model, forecast_dates, forecast_draws_per_nowcast;
+            model_for_batch, forecast_dates, forecast_draws_per_nowcast;
             inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc,
             verbose = verbose
         )
-
-        # Clean up the added nowcast data to restore the model data to its original state
-        AutoGP.remove_data!(base_model, nowcast.ds)
 
         return scenario_forecasts
     end
