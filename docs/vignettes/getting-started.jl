@@ -1,9 +1,4 @@
 using Markdown
-using Pkg
-path_to_doc_project = joinpath(@__DIR__, "..")
-Pkg.activate(path_to_doc_project)
-path_to_package = joinpath(@__DIR__, "..", "..")
-Pkg.develop(path = path_to_package)
 md"""
 # Getting Started with `NowcastAutoGP`
 
@@ -44,7 +39,7 @@ and hyperparameters, aiming to avoid manual kernel engineering.
 
 The main limitation of `AutoGP` is that it is specialised for pure time series modelling (e.g. no covariates).
 
-## What is Nowcasting?
+## What is Nowcasting and how does `NowcastAutoGP` help?
 
 The time series Gaussian process structure discovery and ensemble
 forecast package [`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) is
@@ -56,61 +51,78 @@ become reliable.
 incremental inference features to include nowcasting results into the
 forecasting problem.
 
-When forecasting a time series
+### The forecasting problem with data revisions
+
+When forecasting a time series with revisions, we consider two time indices:
+
+1. The reference date $t$ which is the date of the event we are trying to forecast (e.g. hospital admission).
+2. The report date $T$ which is the "current date" of a group of data indexed by reference dates; this represents how the data looked at different points in time as more data came in and revisions were made.
+
+On any given report date $T$, we have a time series of data for reference dates and past report dates up to $T$:
 
 ```math
-X_T[1:T] = (X_{t,T})_{t=1:T}
+(X_{t,T'})_{t=1, \ldots, T'; T' = 1, 2, \ldots, T}.
 ```
 
-on report date $T$ we split between data on a backwards horizon $D$ where we
-consider older data "confirmed"
+The core forecasting challenge is to forecast the _eventual_ time series, that is the time series of _eventual_ values for each reference date:
 
 ```math
-X_T[1:(T-D)] = (X_{t,T})_{t=1:(T-D)}
+X_t = X_{t,\infty} \qquad t = 1, 2, \ldots
 ```
 
-that we don't expect any further revision to; that is we expect that
-```math
-X_T[1:(T-D)] = X_\infty[1:(T-D)].
-```
+where "$T = \infty$" represents the eventual reported value of the time series at some point in the future when the data is fully revised and stable.
 
-The rest of the data we consider
-"unconfirmed" $X_T[(T-D+1):T]$ where we expect potentially significant
-future revisions and $X_T[(T-D+1):T] \neq X_\infty[(T-D+1):T]$.
+### Nowcasting to address data revisions
 
-Suppose, we have a nowcasting model that generates $K$ samples that
-forecast the *eventual* time series over the uncertain data period the
-$k$th sample being
+On any report date $T$ we can split the latest available data on a backwards horizon $D$ where we consider older data "confirmed"
 
 ```math
-X^{(k)}_\infty[(T-D+1):T] = (X^{(k)}_{t,\infty})_{t=(T-D+1):T};
+\text{Confirmed by } T :~ (X_{t,T})_{t=1, \ldots, T-D} = (X_t)_{t=1, \ldots, T-D}.
 ```
 
-for example by sampling from the posterior distribution. Then we can improve
-our `AutoGP` forecasting for the *eventual* value on reference date
-$f > T$ by replacing our "naive" forecast distribution:
+We don't expect any further revision to this data set. The rest of the latest available data we consider "unconfirmed" 
 
 ```math
-\mathbb{P}(X_{f,\infty} | X_T[1:(T-D)], X_T[(T-D+1):T])
+\text{Unconfirmed by } T :~ (X_{t,T})_{t=T-D+1, \ldots, T}
 ```
 
-with the nowcast estimate for the uncertain data:
+where we expect potentially significant future revisions.
+
+Suppose, we have a nowcasting model $f_{nc}$ that generates $k = 1, \ldots, K$ samples nowcasting the *eventual* time series over the uncertain data period, conditioned on all the data including for past report dates:
 
 ```math
-\mathbb{P}(X_{f,\infty} \mid X_T[1:(T-D)], X_\infty[(T-D+1):T]) = \frac{1}{K} \sum_k \mathbb{P}(X_{f,\infty} |  X_T[1:(T-D)], X^{(k)}_\infty[(T-D+1):T])
+(X^{(k)}_{t})_{t=T-D+1, \ldots, T} \sim f_{nc} \mid (X_{t,T'})_{t=1, \ldots, T'; T' = 1, 2, \ldots, T}
 ```
 
-This kind of forecasting is particularly convenient for `AutoGP`: we can
-use the standard end-to-end inference for the confirmed data and then
-batch over the sampled nowcasts using incremental inference.
+for example by sampling from the posterior distribution of the nowcast model.
+We can use the nowcast samples to "repair" the data for the uncertain period and then make forecasts conditioning on the repaired data, which should lead to better forecasts than conditioning on the latest reported data alone.
+
+### Batching over nowcast samples for forecasting
+     
+A "naive" forecast distribution made on report date $T$ which treats the latest data as ground truth:
+
+```math
+\mathbb{P}\left( (X_{t})_{t= T+1, \ldots, T+h} \mid (X_{t,T})_{t=1, \ldots, T} \right)
+```
+
+could be biased because it doesn't account for the fact that the latest data is likely to be revised upwards.
+
+However, using the nowcast estimates for the uncertain data we can instead make forecasts by marginalizing over the nowcast samples conditioning on the all data:
+
+```math
+\mathbb{P}((X_{t})_{t= T+1, \ldots, T+h} \mid (X_{t,T'})_{t=1, \ldots, T', T' = 1, 2, \ldots, T} ) = \frac{1}{K} \sum_k \mathbb{P}((X_{t})_{t= T+1, \ldots, T+h}|  (X_t)_{t=1, \ldots, T-D}, (X^{(k)}_t)_{t=T-D+1, \ldots, T})
+```
+
+This kind of forecasting is particularly convenient for `AutoGP` because of the underlying use of data batched SMC inference, which allows us to use the standard end-to-end inference for the confirmed data and then batch over the sampled nowcasts using incremental inference.
+Also, note that this approach is agnostic to the nowcasting model used, so more sophisticated nowcasting approaches could be used to generate the nowcast samples.
 
 ## Methodology overview
 
 The main functions we offer for inference and forecasting are:
 
-- `NowcastAutoGP.make_and_fit_model`: This wraps `AutoGP` functionality to make inference on the **stable** part of the time series data using sequential Monte Carlo (SMC) over sequences of data ingestion over `n_particle` SMC particles. Each particle represents a Gaussian process (GP) model for the time series, and at each data ingestion step this particle ensemble can be resampled. Within each SMC particle new possible GP kernel structures and hyperparmeter values are proposed using a specialised MCMC proposal distribution for structural choices (see [`AutoGP` overview](https://probsys.github.io/AutoGP.jl/stable/api.html) for details) and HMC for continuous parameter samples.
+- `NowcastAutoGP.make_and_fit_model`: This wraps `AutoGP` functionality to make inference on the **stable** part of the time series data using sequential Monte Carlo (SMC) over sequences of data ingestion with `n_particle` SMC particles. Each particle represents a Gaussian process (GP) model for the time series, and at each data ingestion step this particle ensemble can be resampled. Within each SMC particle new possible GP kernel structures and hyperparmeter values are proposed using a specialised MCMC proposal distribution for structural choices (see [`AutoGP` overview](https://probsys.github.io/AutoGP.jl/stable/api.html) for details) and HMC for continuous parameter samples.
 
-- `NowcastAutoGP.forecast_with_nowcasts`: This batches over proposed nowcasts for recent data, incrementally adding nowcast _possible_ data to make forecasts before removing. The forecast distribution is the batch of forecasts over nowcasts of recent data.
+- `NowcastAutoGP.forecast_with_nowcasts`: This batches over proposed nowcasts for recent data, incrementally adding nowcast _possible_ data to make forecasts. The forecast distribution is the batch of forecasts over nowcasts of recent data.
 
 # Using `NowcastAutoGP` with NHSN hospitalisation data
 
@@ -122,7 +134,6 @@ using CairoMakie
 using Dates, Distributions, Random
 using CSV, TidierData
 using Parameters: @unpack
-using NowcastAutoGP: make_and_fit_model
 
 Random.seed!(123)
 CairoMakie.activate!(type = "png")
@@ -389,8 +400,9 @@ We will compare four approaches:
 
 1. Forecasting naively.
 2. Removing uncertain data.
-3. Forecasting with a simple nowcast without interleaved HMC.
-4. Forecasting with a simple nowcast with interleaved HMC.
+3. Forecasting with a simple nowcast without refreshing the particles with HMC.
+4. Forecasting with a simple nowcast with HMC refreshing between nowcast draws.
+5. Forecasting with a simple nowcast with HMC refreshing between forecast draws.
 
 ### Approach 1: Forecasting naively
 
@@ -443,8 +455,7 @@ md"""
 
 We note that the problem is _mainly_ with the most recent week of
 hospitalisation reports.
-Therefore, another strategy could be to simply redact that week but
-otherwise leave out forecasting untouched.
+Therefore, another strategy could be to simply redact that week.
 """
 
 leave_out_last_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
@@ -483,10 +494,7 @@ Therefore, we fit the ratio of last weeks report to last weeks eventual
 reported to a LogNormal. The MLE fit for this was
 LogNormal(logmean = 0.1, logstd = 0.027).
 
-In the following examples, for each vintage we first fit to all the data
-except the most recent week (`n_redact = 1`).
-Second, we sample a multiplier for the most recent week from the
-LogNormal distribution 100 times.
+We generate 100 nowcast samples for the most recent week, across all report dates, by sampling from this distribution and multiplying by the latest reported value for that week.
 """
 n_nowcast_samples = 100
 ## Simple nowcast on most recent data where we suspect significant revisions
@@ -499,8 +507,9 @@ all_nowcast_samples = map(fitted_models_by_report_date) do fitted_model
             for _ in 1:n_nowcast_samples
     ]
 end
+nothing #hide
 md"""
-Third, we use `forecast_with_nowcasts` to batch 20 forecasts per
+We can use `forecast_with_nowcasts` to batch 20 forecasts per
 nowcast signal on top of the inference done in step one.
 
 This is a very simple nowcasting approach!
@@ -510,20 +519,18 @@ full generative model defined by e.g.
 [`baselinenowcast`](https://baselinenowcast.epinowcast.org/), could have
 been deserialized into this approach.
 
-We compare two variants:
+We compare three variants:
 - **Approach 3** uses the original forecasting method, drawing all forecast
-  samples from the GP predictive distribution without refining
-  hyperparameters between draws (`forecast_n_hmc=0`).
-- **Approach 4** updates the GP hyperparameters with an HMC refinement step between
-each _nowcast draw_ (`n_hmc=1`), which allows the GP _particles_ to adapt to the new data and increases the diversity of the forecast ensemble.
-- **Approach 5** interleaves HMC parameter refinement between each _forecast
+  samples from the mixture distribution over the weighted particles representing an ensemble of GP models. In this variant we don't enable any HMC steps to refresh the particle ensemble after incorporating the nowcast samples.
+- **Approach 4** as approach 3, but updates the GP hyperparameters with an HMC refinement step between each _nowcast draw_ (`n_hmc=1`), which allows the GP _particles_ to adapt to the new data and increases the diversity of the forecast ensemble.
+- **Approach 5** as approach 3, but interleaves HMC refinement steps between each _forecast
   draw_ (`forecast_n_hmc=1`), which increases the diversity of the forecast ensemble by
   more than Approach 4, but is more computationally expensive.
 
 Note that approach 5 is a mitigation strategy for having a particle ensemble that is too small to capture the posterior distribution over GP
-hyperparameters, which can lead to underdispersed forecasts. If you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5.
+hyperparameters, which could lead to underdispersed forecasts. If you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5.
 
-#### Approach 3: Nowcast without interleaved HMC
+#### Approach 3: Nowcast without HMC steps
 """
 
 nowcast_no_hmc_forecasts_by_reference_date = map(
@@ -554,13 +561,13 @@ nothing #hide
 
 plot_with_forecasts(
     nowcast_no_hmc_forecasts_by_reference_date,
-    "Forecasts from Different Report Dates (Nowcast, no interleaved HMC)";
+    "Forecasts from Different Report Dates (Nowcast, no HMC)";
     n_ahead = 4,
     selected_dates = selected_dates
 )
 
 md"""
-#### Approach 4: Nowcast with particle refresh HMC
+#### Approach 4: Nowcast with HMC step after each nowcast draw
 
 Using the same nowcasting setup, we now enable a HMC step for each particle to refresh
 the GP hyperparameters after incorporating each nowcast sample. Forecasts are then drawn from the refreshed particle ensemble without further HMC steps between forecast draws.
@@ -568,7 +575,7 @@ This allows the GP hyperparameters to be refined for each nowcast sample, produc
 better-calibrated forecast ensemble.
 """
 
-nowcast_hmc_forecasts_by_reference_date = map(
+nowcast_nc_hmc_forecasts_by_reference_date = map(
     fitted_models_by_report_date, all_nowcast_samples
 ) do fitted_model, nowcast_samples
     @unpack model_dict, forecast_dates, transformation, inv_transformation,
@@ -582,7 +589,7 @@ nowcast_hmc_forecasts_by_reference_date = map(
 
     forecasts = forecast_with_nowcasts(
         model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
-        inv_transformation, forecast_n_hmc = 1, n_hmc = 0, verbose = true
+        inv_transformation, n_hmc = 1, verbose = true
     )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -594,17 +601,15 @@ nowcast_hmc_forecasts_by_reference_date = map(
 end
 nothing #hide
 
-# We see that this significantly improves the forecasting visually.
-
 plot_with_forecasts(
-    nowcast_hmc_forecasts_by_reference_date,
-    "Forecasts from Different Report Dates (Nowcast, with interleaved HMC)";
+    nowcast_nc_hmc_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Nowcast, with HMC refresh each nowcast)";
     n_ahead = 4,
     selected_dates = selected_dates
 )
 
 md"""
-#### Approach 5: Nowcast with interleaved HMC
+#### Approach 5: Nowcast with HMC step after each forecast draw
 
 We now enable interleaved HMC parameter refinement between _forecast draws_. This allows the GP hyperparameters to
 be refined between each forecast sample, which better reflects the posterior distribution over hyperparameters than approach 4, which only refines hyperparameters between nowcast samples.
@@ -612,7 +617,7 @@ This can lead to a more diverse and better-calibrated forecast ensemble, but is 
 Note that if you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5, as the particle ensemble will already capture the posterior distribution over hyperparameters well enough that further HMC steps between forecast draws won't add much diversity.
 """
 
-nowcast_hmc_forecasts_by_reference_date = map(
+nowcast_dr_hmc_forecasts_by_reference_date = map(
     fitted_models_by_report_date, all_nowcast_samples
 ) do fitted_model, nowcast_samples
     @unpack model_dict, forecast_dates, transformation, inv_transformation,
@@ -638,11 +643,9 @@ nowcast_hmc_forecasts_by_reference_date = map(
 end
 nothing #hide
 
-# We see that this significantly improves the forecasting visually.
-
 plot_with_forecasts(
-    nowcast_hmc_forecasts_by_reference_date,
-    "Forecasts from Different Report Dates (Nowcast, with interleaved HMC)";
+    nowcast_dr_hmc_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Nowcast, with HMC refresh each forecast)";
     n_ahead = 4,
     selected_dates = selected_dates
 )
@@ -650,17 +653,17 @@ plot_with_forecasts(
 md"""
 ## Scoring
 
-To evaluate the quality of our different forecasting approaches, we use
-proper scoring rules.
+To evaluate the quality of our different forecasting approaches, we use the
+proper scoring rule **Continuous Ranked Probability Score (CRPS)**.
 A proper scoring rule is a function that assigns a numerical score to a
 probabilistic forecast, with the property that the score is optimized
-(in expectation) when the forecast distribution matches the true future
+(in expectation) when the forecast distribution matches the true
 data distribution.
 
-The **Continuous Ranked Probability Score (CRPS)** is a proper scoring
-rule that generalizes the absolute error to probabilistic forecasts. For
+CRPS is a proper scoring
+rule that generalizes absolute error, i.e. mean absolute error (MAE), to being a proper score for probabilistic forecasts. For
 a forecast distribution $F(x) = P(X \leq x)$ and observed outcome $y$,
-the CRPS is defined as:
+the CRPS score is defined as:
 
 ```math
 \text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]
@@ -681,7 +684,7 @@ designed for epidemiological forecasting.
 
 Let's implement a simple CRPS function and functions for getting the
 mean CRPS score over reporting dates and forecast horizons in order to
-compare our four forecasting approaches:
+compare our five forecasting approaches:
 """
 
 function crps(y::Real, X::Vector{<:Real})
@@ -705,14 +708,19 @@ function score_forecast(
     @assert max_horizon <= length(forecast_dates) "Not enough data to score full horizon"
     score_dates = forecast_dates[1:max_horizon]
     scorable_data = @filter(latestdata, reference_date in !!score_dates)
-    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y,
+    S = mapreduce(
+        +, scorable_data.confirm[1:max_horizon],
+        eachrow(F.forecasts[1:max_horizon, :])
+    ) do y,
             X
         crps(data_transform(y), data_transform.(X))
     end
     return S / max_horizon
 end
 
-function score_all_forecasts(latestdata, forecasts; max_horizon = 4, data_transform = x -> x)
+function score_all_forecasts(
+        latestdata, forecasts; max_horizon = 4, data_transform = x -> x
+    )
     total_score = mapreduce(+, forecasts; init = 0.0) do F
         forecast_dates = F.dates
         score_forecast(latestdata, forecast_dates, F; max_horizon, data_transform)
@@ -732,7 +740,8 @@ scores = map(
         naive_forecasts_by_reference_date,
         leave_out_last_forecasts_by_reference_date,
         nowcast_no_hmc_forecasts_by_reference_date,
-        nowcast_hmc_forecasts_by_reference_date,
+        nowcast_nc_hmc_forecasts_by_reference_date,
+        nowcast_dr_hmc_forecasts_by_reference_date,
     ]
 ) do F
     score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = log)
@@ -740,27 +749,33 @@ end
 nothing #hide
 
 # Then we can plot these scores as score ratios relative to the best
-# approach (nowcast with interleaved HMC).
+# approach (nowcast with HMC step per forecast draw).
 
 ## Calculate score ratios compared to nowcast with HMC (baseline)
-baseline_score = scores[4]
+baseline_score = scores[end] # nowcast with HMC step per forecast draw is the last in the list
 score_ratios = [score / baseline_score for score in scores]
 
 ## Create bar plot comparing score ratios
-method_names = ["Naive", "Leave Out\nLast", "Nowcast\n(no HMC)", "Nowcast\n(+ HMC)"]
+method_names = [
+    "Naive", "Leave Out\nLast", "Nowcast\n(no HMC)",
+    "Nowcast\n(NC HMC)", "Nowcast\n(DR HMC)",
+]
 
 fig = Figure(size = (700, 400))
 ax = Axis(
     fig[1, 1],
     xlabel = "Forecasting Method",
-    ylabel = "Score Ratio (lower is better)",
-    title = "Forecast Performance: Score Ratios vs Nowcast + HMC"
+    ylabel = "Score Ratio",
+    title = "Forecast Performance: Score Ratios over approaches (lower is better)"
 )
 
 ## Create bar plot with different colors based on performance
-bar_colors = [ratio > 1 ? :red : ratio == 1 ? :green : :blue for ratio in score_ratios]
+bar_colors = [
+    ratio > 1.05 ? :red : abs(ratio - 1) < 0.05 ? :green : :blue
+        for ratio in score_ratios
+]
 barplot!(
-    ax, 1:4, score_ratios,
+    ax, 1:5, score_ratios,
     color = bar_colors,
     alpha = 0.7,
     strokewidth = 2,
@@ -779,7 +794,7 @@ end
 hlines!(ax, [1], color = :black, linestyle = :dash, linewidth = 1)
 
 ## Set x-axis labels
-ax.xticks = (1:4, method_names)
+ax.xticks = (1:5, method_names)
 
 ## Add some padding to y-limits
 y_max = maximum(score_ratios)
@@ -803,26 +818,18 @@ The score ratios clearly show progressive improvement across approaches:
    approach achieves a score ratio between the naive method and the
    nowcasting approaches, indicating improved performance over naive
    forecasting but still worse than nowcasting. While excluding the
-   most recent (and most uncertain) week removes problematic reporting
-   delays, it effectively increases our forecast horizon by one week,
-   leading to increased uncertainty in predictions.
+   most recent (and most uncertain) week removes problematic bias due to reporting
+   delay, it effectively increases our forecast horizon by one week,
+   leading to overdispersed predictions.
 
-3. **Nowcasting without interleaved HMC** - Even without HMC refinement
-   between forecast draws, the simple nowcasting approach substantially
-   outperforms both non-nowcasting alternatives. This demonstrates the
-   value of explicitly modelling reporting delays rather than simply
-   ignoring uncertain data.
-
-4. **Nowcasting with interleaved HMC provides the best performance** -
-   By interleaving HMC parameter refinement between forecast draws, we
-   achieve the best score. The HMC steps allow the GP hyperparameters
-   to adapt between draws, producing a more diverse and
-   better-calibrated forecast ensemble.
+3. **Batched forecasts over nowcasts performed best** - Batching over nowcast samples significantly improves forecast skill,
+   with the simple nowcast outperforming the naive
+   and leave-out approaches. This demonstrates that even a simple
+   nowcasting model that adjusts for expected revisions in recent data can
+   substantially enhance forecast performance. Increasing the diversity of the forecast ensemble with HMC steps offered marginal improvements, suggesting that while hyperparameter refinement can help, the main gains come from incorporating nowcast adjustments. 
 
 These results support the core motivation for `NowcastAutoGP` - that
-combining nowcasting with sophisticated time series modeling can
-significantly improve forecast accuracy in real-world surveillance
-scenarios where reporting delays are common. The additional improvement
-from interleaved HMC demonstrates that forecast ensemble quality
-benefits from hyperparameter refinement between draws.
+combining nowcasting with time series modeling can
+significantly improve forecast skill in real-world surveillance
+scenarios where reporting delays are common.
 """

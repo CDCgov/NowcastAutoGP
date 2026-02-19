@@ -122,7 +122,7 @@ function forecast_with_nowcasts(
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
     @assert 0.0 <= ess_threshold <= 1.0 "ess_threshold must be between 0 and 1"
-    @assert forecast_n_hmc === nothing || forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
+    @assert forecast_n_hmc === nothing||forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
 
     base_model_dict = Dict(base_model)
     progress = Progress(length(nowcasts); desc = "Nowcast scenarios: ", enabled = verbose)

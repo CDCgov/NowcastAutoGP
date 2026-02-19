@@ -1,17 +1,16 @@
-vignettes_to_make = [
-    "Getting started" => "tutorial.jl",
-]
+using Literate
+vignettes_to_make = ["getting-started.jl"]
 
-# Generate Documenter-flavored markdown from Literate.jl scripts
-for vignette_pair in vignettes_to_make
-    vignettefile = vignette_pair.second
+# Generate markdown with executed output from Literate.jl scripts.
+# Uses CommonMarkFlavor so Documenter.jl won't re-evaluate code blocks.
+# Run this locally when vignettes change; commit the generated .md and images.
+for vignettefile in vignettes_to_make
     Literate.markdown(
         joinpath(@__DIR__, "vignettes", vignettefile),
         joinpath(@__DIR__, "src", "vignettes");
-        eval = false,
-        flavor = Literate.DocumenterFlavor(),
+        execute = true,
+        flavor = Literate.CommonMarkFlavor(),
         mdstrings = true,
         credit = true
     )
-    push!(pages, vignette_pair.first => "vignettes/$(replace(vignettefile, ".jl" => ".md"))")
 end

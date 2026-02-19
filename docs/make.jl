@@ -1,14 +1,12 @@
 using Documenter
-using Literate
 using NowcastAutoGP
 
-pages = ["Home" => "index.md"]
-# Generate Documenter-flavored markdown from Literate.jl scripts
-# Add them to the `pages` list to include them in the documentation navigation
-include("make_vignettes.jl")
-
-# Generate API reference documentation from docstrings in the source code
-push!(pages, "API Reference" => "api.md")
+# Doc pages
+pages = [
+    "Home" => "index.md",
+    "Getting Started" => "vignettes/getting-started.md",
+    "API Reference" => "api.md",
+]
 
 makedocs(
     sitename = "NowcastAutoGP.jl",

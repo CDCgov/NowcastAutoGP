@@ -27,7 +27,7 @@ Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 
 ## Getting Started
 
-- **[Getting started example](vignettes/tutorial.md)**: A getting started guide demonstrating basic usage for combining forecasting and nowcasting on NHSN covid-19 hospitalization data.
+- **[Getting started example](vignettes/getting-started.md)**: A getting started guide demonstrating basic usage for combining forecasting and nowcasting on NHSN covid-19 hospitalization data.
 
 ## API Reference and Resources
 
