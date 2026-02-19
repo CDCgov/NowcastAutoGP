@@ -1,4 +1,9 @@
 using Markdown
+using Pkg
+path_to_doc_project = joinpath(@__DIR__, "..")
+Pkg.activate(path_to_doc_project)
+path_to_package = joinpath(@__DIR__, "..", "..")
+Pkg.develop(path = path_to_package)
 md"""
 # Getting Started with `NowcastAutoGP`
 
@@ -20,6 +25,24 @@ The reason for the uncertainty is that despite _eventually_ having a record
 of severe cases arriving in a given week (we call this the reference date),
 at any given reporting week (we call this the report date) recent reference
 dates will not have complete data.
+
+## What is `AutoGP`?
+
+[`AutoGP.jl`](https://github.com/probsys/AutoGP.jl) is a Julia package for
+automatic Gaussian process model discovery. Rather than fitting a single GP
+with a fixed kernel, AutoGP maintains an ensemble of GP models (called
+_particles_), each with a different kernel structure (e.g. periodic, linear,
+radial basis, or compositions thereof). `AutoGP` combines three inference techniques:
+
+- Sequential Monte Carlo (SMC) steps as new data is ingested, which resample the particle ensemble of GP models to focus on promising kernel structures.
+    New data can be provided to SMC either in batches (`AutoGP` has built-in support for scheduling data ingestion in batches) or incrementally (e.g. for nowcasting).
+- Markov chain Monte Carlo (MCMC) steps that propose new kernel structures for each particle, allowing the ensemble to explore a rich space of possible kernels.
+- Hamiltonian Monte Carlo (HMC) steps that tune the continuous hyperparameters of each particle's kernel, improving fit and increasing diversity.
+
+The result is a weighted mixture of GPs that captures uncertainty over both kernel structure
+and hyperparameters, aiming to avoid manual kernel engineering.
+
+The main limitation of `AutoGP` is that it is specialised for pure time series modelling (e.g. no covariates).
 
 ## What is Nowcasting?
 
@@ -229,9 +252,9 @@ function fit_on_data(
         n_redact,
         max_ahead = 8,
         training_data = training_data,
-        n_particles = 4, #24,
-        smc_data_proportion = 0.1,
-        n_mcmc = 50, n_hmc = 50
+        n_particles = 24, # number of SMC particles, i.e. GP models, to maintain in the ensemble
+        smc_data_proportion = 0.1, # proportion of data to ingest per SMC step, by default shuffled batches
+        n_mcmc = 50, n_hmc = 50 # number of MCMC and HMC steps to run after each SMC step for particle refinement/refresh
     )
 
     ## Filter for correct report date
@@ -343,15 +366,17 @@ In the next section we will use these fits to make forecasts with different nowc
 fitted_models_by_report_date = map(selected_dates) do report_date
     model, forecast_dates,
         transformation,
-        inv_transformation, data_to_revise = fit_on_data(
+        inv_transformation,
+        data_to_revise = fit_on_data(
         report_date;
         n_redact = 1,
-        training_data = training_data
+        training_data = training_data,
+        n_particles = 4
     )
     return (
         model_dict = Dict(model), forecast_dates = forecast_dates,
         transformation = transformation, inv_transformation = inv_transformation,
-        data_to_revise = data_to_revise
+        data_to_revise = data_to_revise,
     )
 end
 nothing #hide
@@ -378,7 +403,8 @@ data stream.
 
 n_forecasts = 2000
 naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
     model = GPModel(model_dict)
     ## Create a "naive" nowcast by taking the latest reported data as the best estimate of the eventual data
     ## NB: we wrap the single nowcast in a vector to be compatible with the nowcast input "vector of vectors" format
@@ -389,7 +415,7 @@ naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_
 
     forecasts = forecast_with_nowcasts(
         model, naive_nowcasts, forecast_dates, n_forecasts;
-        inv_transformation, ess_threshold = 2.0
+        inv_transformation = inv_transformation, ess_threshold = 1.0
     )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
@@ -422,7 +448,8 @@ otherwise leave out forecasting untouched.
 """
 
 leave_out_last_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
-    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
     model = GPModel(model_dict)
 
     forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
@@ -447,7 +474,7 @@ plot_with_forecasts(
 )
 
 md"""
-### Approaches 3 and 4: Forecasting with a simple nowcast
+### Approaches 3-5: Forecasting with a simple nowcast
 
 Now lets consider a really simple nowcasting model.
 Over recent vintages we notice that the most recent week gets revised
@@ -487,18 +514,24 @@ We compare two variants:
 - **Approach 3** uses the original forecasting method, drawing all forecast
   samples from the GP predictive distribution without refining
   hyperparameters between draws (`forecast_n_hmc=0`).
-- **Approach 4** interleaves HMC parameter refinement between forecast
-  draws (`forecast_n_hmc=1`), which increases ensemble diversity and
-  forecast quality.
+- **Approach 4** updates the GP hyperparameters with an HMC refinement step between
+each _nowcast draw_ (`n_hmc=1`), which allows the GP _particles_ to adapt to the new data and increases the diversity of the forecast ensemble.
+- **Approach 5** interleaves HMC parameter refinement between each _forecast
+  draw_ (`forecast_n_hmc=1`), which increases the diversity of the forecast ensemble by
+  more than Approach 4, but is more computationally expensive.
+
+Note that approach 5 is a mitigation strategy for having a particle ensemble that is too small to capture the posterior distribution over GP
+hyperparameters, which can lead to underdispersed forecasts. If you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5.
 
 #### Approach 3: Nowcast without interleaved HMC
 """
 
-nowcast_no_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date, all_nowcast_samples) do fitted_model, nowcast_samples
-    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+nowcast_no_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
     model = GPModel(model_dict)
-
-
 
     nowcasts = create_nowcast_data(
         nowcast_samples, [data_to_revise.revise_dates[end]];
@@ -527,16 +560,19 @@ plot_with_forecasts(
 )
 
 md"""
-#### Approach 4: Nowcast with interleaved HMC
+#### Approach 4: Nowcast with particle refresh HMC
 
-Using the same nowcasting setup, we now enable interleaved HMC parameter
-refinement between forecast draws. This allows the GP hyperparameters to
-be refined between each forecast sample, producing a more diverse and
+Using the same nowcasting setup, we now enable a HMC step for each particle to refresh
+the GP hyperparameters after incorporating each nowcast sample. Forecasts are then drawn from the refreshed particle ensemble without further HMC steps between forecast draws.
+This allows the GP hyperparameters to be refined for each nowcast sample, producing a more diverse and
 better-calibrated forecast ensemble.
 """
 
-nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date, all_nowcast_samples) do fitted_model, nowcast_samples
-    @unpack model_dict, forecast_dates, transformation, inv_transformation, data_to_revise = fitted_model
+nowcast_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
     model = GPModel(model_dict)
 
     nowcasts = create_nowcast_data(
@@ -546,7 +582,51 @@ nowcast_hmc_forecasts_by_reference_date = map(fitted_models_by_report_date, all_
 
     forecasts = forecast_with_nowcasts(
         model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
-        inv_transformation, forecast_n_hmc = 1, n_hmc = 0,
+        inv_transformation, forecast_n_hmc = 1, n_hmc = 0, verbose = true
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs'
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end
+nothing #hide
+
+# We see that this significantly improves the forecasting visually.
+
+plot_with_forecasts(
+    nowcast_hmc_forecasts_by_reference_date,
+    "Forecasts from Different Report Dates (Nowcast, with interleaved HMC)";
+    n_ahead = 4,
+    selected_dates = selected_dates
+)
+
+md"""
+#### Approach 5: Nowcast with interleaved HMC
+
+We now enable interleaved HMC parameter refinement between _forecast draws_. This allows the GP hyperparameters to
+be refined between each forecast sample, which better reflects the posterior distribution over hyperparameters than approach 4, which only refines hyperparameters between nowcast samples.
+This can lead to a more diverse and better-calibrated forecast ensemble, but is more computationally expensive.
+Note that if you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5, as the particle ensemble will already capture the posterior distribution over hyperparameters well enough that further HMC steps between forecast draws won't add much diversity.
+"""
+
+nowcast_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation, forecast_n_hmc = 1, n_hmc = 0, verbose = true
     )
 
     iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
