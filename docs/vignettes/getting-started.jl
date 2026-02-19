@@ -80,7 +80,7 @@ On any report date $T$ we can split the latest available data on a backwards hor
 \text{Confirmed by } T :~ (X_{t,T})_{t=1, \ldots, T-D} = (X_t)_{t=1, \ldots, T-D}.
 ```
 
-We don't expect any further revision to this data set. The rest of the latest available data we consider "unconfirmed" 
+We don't expect any further revision to this data set. The rest of the latest available data we consider "unconfirmed"
 
 ```math
 \text{Unconfirmed by } T :~ (X_{t,T})_{t=T-D+1, \ldots, T}
@@ -98,7 +98,7 @@ for example by sampling from the posterior distribution of the nowcast model.
 We can use the nowcast samples to "repair" the data for the uncertain period and then make forecasts conditioning on the repaired data, which should lead to better forecasts than conditioning on the latest reported data alone.
 
 ### Batching over nowcast samples for forecasting
-     
+
 A "naive" forecast distribution made on report date $T$ which treats the latest data as ground truth:
 
 ```math
@@ -826,7 +826,7 @@ The score ratios clearly show progressive improvement across approaches:
    with the simple nowcast outperforming the naive
    and leave-out approaches. This demonstrates that even a simple
    nowcasting model that adjusts for expected revisions in recent data can
-   substantially enhance forecast performance. Increasing the diversity of the forecast ensemble with HMC steps offered marginal improvements, suggesting that while hyperparameter refinement can help, the main gains come from incorporating nowcast adjustments. 
+   substantially enhance forecast performance. Increasing the diversity of the forecast ensemble with HMC steps offered marginal improvements, suggesting that while hyperparameter refinement can help, the main gains come from incorporating nowcast adjustments.
 
 These results support the core motivation for `NowcastAutoGP` - that
 combining nowcasting with time series modeling can

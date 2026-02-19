@@ -170,9 +170,9 @@ Columns: 8
 .report_date   Dates.Date     2025-02-01, 2025-02-08, 2025-02-15, 2025-02-22, 20
 .confirm       Float64        26180.0, 26180.0, 26180.0, 26180.0, 26180.0, 26180
 .max_confirm   Float64        26150.0, 26150.0, 26150.0, 26150.0, 26150.0, 26150
-.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917, 
+.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917,
 .multiplier    Float64        0.9988540870893812, 0.9988540870893812, 0.99885408
-.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us, 
+.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us,
 .time_index    Int64          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
 ````
@@ -268,9 +268,9 @@ Columns: 8
 .report_date   Dates.Date     2025-02-01, 2025-02-08, 2025-02-15, 2025-02-22, 20
 .confirm       Float64        26180.0, 26180.0, 26180.0, 26180.0, 26180.0, 26180
 .max_confirm   Float64        26150.0, 26150.0, 26150.0, 26150.0, 26150.0, 26150
-.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917, 
+.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917,
 .multiplier    Float64        0.9988540870893812, 0.9988540870893812, 0.99885408
-.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us, 
+.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us,
 .time_index    Int64          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 
 ````
@@ -874,4 +874,3 @@ scenarios where reporting delays are common.
 ---
 
 *This page was generated using [Literate.jl](https://github.com/fredrikekre/Literate.jl).*
-
