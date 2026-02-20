@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Getting Started · NowcastAutoGP.jl</title><meta name="title" content="Getting Started · NowcastAutoGP.jl"/><meta property="og:title" content="Getting Started · NowcastAutoGP.jl"/><meta property="twitter:title" content="Getting Started · NowcastAutoGP.jl"/><meta name="description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:description" content="Documentation for NowcastAutoGP.jl."/><meta property="twitter:description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/getting-started/"/><meta property="twitter:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/getting-started/"/><link rel="canonical" href="https://cdcgov.github.io/NowcastAutoGP/vignettes/getting-started/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/material-theme.css" rel="stylesheet" type="text/css"/><script src="../../assets/material-theme.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">NowcastAutoGP.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li class="is-active"><a class="tocitem" href>Getting Started</a><ul class="internal"><li><a class="tocitem" href="#Introduction"><span>Introduction</span></a></li><li><a class="tocitem" href="#What-is-AutoGP?"><span>What is <code>AutoGP</code>?</span></a></li><li><a class="tocitem" href="#What-is-Nowcasting-and-how-does-NowcastAutoGP-help?"><span>What is Nowcasting and how does <code>NowcastAutoGP</code> help?</span></a></li><li><a class="tocitem" href="#Methodology-overview"><span>Methodology overview</span></a></li><li class="toplevel"><a class="tocitem" href="#Using-NowcastAutoGP-with-NHSN-hospitalisation-data"><span>Using <code>NowcastAutoGP</code> with NHSN hospitalisation data</span></a></li><li><a class="tocitem" href="#Loading-dependencies"><span>Loading dependencies</span></a></li><li><a class="tocitem" href="#Loading-Surveillance-Data"><span>Loading Surveillance Data</span></a></li><li><a class="tocitem" href="#Fitting-models-on-different-report-dates"><span>Fitting models on different report dates</span></a></li><li><a class="tocitem" href="#Forecasting"><span>Forecasting</span></a></li><li><a class="tocitem" href="#Scoring"><span>Scoring</span></a></li></ul></li><li><a class="tocitem" href="../../api/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Getting Started</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Getting Started</a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP/blob/main/docs/src/vignettes/getting-started.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Markdown</code></pre><h1 id="Getting-Started-with-NowcastAutoGP"><a class="docs-heading-anchor" href="#Getting-Started-with-NowcastAutoGP">Getting Started with <code>NowcastAutoGP</code></a><a id="Getting-Started-with-NowcastAutoGP-1"></a><a class="docs-heading-anchor-permalink" href="#Getting-Started-with-NowcastAutoGP" title="Permalink"></a></h1><p><em>Combining nowcasting and <code>AutoGP</code></em></p><p><strong>CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)</strong></p><h2 id="Introduction"><a class="docs-heading-anchor" href="#Introduction">Introduction</a><a id="Introduction-1"></a><a class="docs-heading-anchor-permalink" href="#Introduction" title="Permalink"></a></h2><p>This tutorial demonstrates how to use <code>NowcastAutoGP</code> for epidemiological forecasting - making forecasts of future disease activity despite reporting delays making the latest data unreliable. This is a common challenge in public health surveillance where case reports arrive with delays. In this tutorial, we will want to forecast future weekly hospital admissions with confirmed Covid diagnosis despite uncertainty around the eventual value of recent admissions. The reason for the uncertainty is that despite <em>eventually</em> having a record of severe cases arriving in a given week (we call this the reference date), at any given reporting week (we call this the report date) recent reference dates will not have complete data.</p><h2 id="What-is-AutoGP?"><a class="docs-heading-anchor" href="#What-is-AutoGP?">What is <code>AutoGP</code>?</a><a id="What-is-AutoGP?-1"></a><a class="docs-heading-anchor-permalink" href="#What-is-AutoGP?" title="Permalink"></a></h2><p><a href="https://github.com/probsys/AutoGP.jl"><code>AutoGP.jl</code></a> is a Julia package for automatic Gaussian process model discovery. Rather than fitting a single GP with a fixed kernel, AutoGP maintains an ensemble of GP models (called <em>particles</em>), each with a different kernel structure (e.g. periodic, linear, radial basis, or compositions thereof). <code>AutoGP</code> combines three inference techniques:</p><ul><li>Sequential Monte Carlo (SMC) steps as new data is ingested, which resample the particle ensemble of GP models to focus on promising kernel structures.   New data can be provided to SMC either in batches (<code>AutoGP</code> has built-in support for scheduling data ingestion in batches) or incrementally (e.g. for nowcasting).</li><li>Markov chain Monte Carlo (MCMC) steps that propose new kernel structures for each particle, allowing the ensemble to explore a rich space of possible kernels.</li><li>Hamiltonian Monte Carlo (HMC) steps that tune the continuous hyperparameters of each particle&#39;s kernel, improving fit and increasing diversity.</li></ul><p>The result is a weighted mixture of GPs that captures uncertainty over both kernel structure and hyperparameters, aiming to avoid manual kernel engineering.</p><p>The main limitation of <code>AutoGP</code> is that it is specialised for pure time series modelling (e.g. no covariates).</p><h2 id="What-is-Nowcasting-and-how-does-NowcastAutoGP-help?"><a class="docs-heading-anchor" href="#What-is-Nowcasting-and-how-does-NowcastAutoGP-help?">What is Nowcasting and how does <code>NowcastAutoGP</code> help?</a><a id="What-is-Nowcasting-and-how-does-NowcastAutoGP-help?-1"></a><a class="docs-heading-anchor-permalink" href="#What-is-Nowcasting-and-how-does-NowcastAutoGP-help?" title="Permalink"></a></h2><p>The time series Gaussian process structure discovery and ensemble forecast package <a href="https://github.com/probsys/AutoGP.jl"><code>AutoGP.jl</code></a> is highly impressive, but doesn&#39;t include features for ingesting the kind of data we expect from a signal that needs significant nowcasting to become reliable.</p><p><code>NowcastAutoGP</code> is an extension of <code>AutoGP</code> that uses <code>AutoGP</code>&#39;s incremental inference features to include nowcasting results into the forecasting problem.</p><h3 id="The-forecasting-problem-with-data-revisions"><a class="docs-heading-anchor" href="#The-forecasting-problem-with-data-revisions">The forecasting problem with data revisions</a><a id="The-forecasting-problem-with-data-revisions-1"></a><a class="docs-heading-anchor-permalink" href="#The-forecasting-problem-with-data-revisions" title="Permalink"></a></h3><p>When forecasting a time series with revisions, we consider two time indices:</p><ol><li>The reference date <span>$t$</span> which is the date of the event we are trying to forecast (e.g. hospital admission).</li><li>The report date <span>$T$</span> which is the &quot;current date&quot; of a group of data indexed by reference dates; this represents how the data looked at different points in time as more data came in and revisions were made.</li></ol><p>On any given report date <span>$T$</span>, we have a time series of data for reference dates and past report dates up to <span>$T$</span>:</p><p class="math-container">\[(X_{t,T&#39;})_{t=1, \ldots, T&#39;; T&#39; = 1, 2, \ldots, T}.\]</p><p>The core forecasting challenge is to forecast the <em>eventual</em> time series, that is the time series of <em>eventual</em> values for each reference date:</p><p class="math-container">\[X_t = X_{t,\infty} \qquad t = 1, 2, \ldots\]</p><p>where &quot;<span>$T = \infty$</span>&quot; represents the eventual reported value of the time series at some point in the future when the data is fully revised and stable.</p><h3 id="Nowcasting-to-address-data-revisions"><a class="docs-heading-anchor" href="#Nowcasting-to-address-data-revisions">Nowcasting to address data revisions</a><a id="Nowcasting-to-address-data-revisions-1"></a><a class="docs-heading-anchor-permalink" href="#Nowcasting-to-address-data-revisions" title="Permalink"></a></h3><p>On any report date <span>$T$</span> we can split the latest available data on a backwards horizon <span>$D$</span> where we consider older data &quot;confirmed&quot;</p><p class="math-container">\[\text{Confirmed by } T :~ (X_{t,T})_{t=1, \ldots, T-D} = (X_t)_{t=1, \ldots, T-D}.\]</p><p>We don&#39;t expect any further revision to this data set. The rest of the latest available data we consider &quot;unconfirmed&quot;</p><p class="math-container">\[\text{Unconfirmed by } T :~ (X_{t,T})_{t=T-D+1, \ldots, T}\]</p><p>where we expect potentially significant future revisions.</p><p>Suppose, we have a nowcasting model <span>$f_{nc}$</span> that generates <span>$k = 1, \ldots, K$</span> samples nowcasting the <em>eventual</em> time series over the uncertain data period, conditioned on all the data including for past report dates:</p><p class="math-container">\[(X^{(k)}_{t})_{t=T-D+1, \ldots, T} \sim f_{nc} \mid (X_{t,T&#39;})_{t=1, \ldots, T&#39;; T&#39; = 1, 2, \ldots, T}\]</p><p>for example by sampling from the posterior distribution of the nowcast model. We can use the nowcast samples to &quot;repair&quot; the data for the uncertain period and then make forecasts conditioning on the repaired data, which should lead to better forecasts than conditioning on the latest reported data alone.</p><h3 id="Batching-over-nowcast-samples-for-forecasting"><a class="docs-heading-anchor" href="#Batching-over-nowcast-samples-for-forecasting">Batching over nowcast samples for forecasting</a><a id="Batching-over-nowcast-samples-for-forecasting-1"></a><a class="docs-heading-anchor-permalink" href="#Batching-over-nowcast-samples-for-forecasting" title="Permalink"></a></h3><p>A &quot;naive&quot; forecast distribution made on report date <span>$T$</span> which treats the latest data as ground truth:</p><p class="math-container">\[\mathbb{P}\left( (X_{t})_{t= T+1, \ldots, T+h} \mid (X_{t,T})_{t=1, \ldots, T} \right)\]</p><p>could be biased because it doesn&#39;t account for the fact that the latest data is likely to be revised upwards.</p><p>However, using the nowcast estimates for the uncertain data we can instead make forecasts by marginalizing over the nowcast samples conditioning on the all data:</p><p class="math-container">\[\mathbb{P}((X_{t})_{t= T+1, \ldots, T+h} \mid (X_{t,T&#39;})_{t=1, \ldots, T&#39;, T&#39; = 1, 2, \ldots, T} ) = \frac{1}{K} \sum_k \mathbb{P}((X_{t})_{t= T+1, \ldots, T+h}|  (X_t)_{t=1, \ldots, T-D}, (X^{(k)}_t)_{t=T-D+1, \ldots, T})\]</p><p>This kind of forecasting is particularly convenient for <code>AutoGP</code> because of the underlying use of data batched SMC inference, which allows us to use the standard end-to-end inference for the confirmed data and then batch over the sampled nowcasts using incremental inference. Also, note that this approach is agnostic to the nowcasting model used, so more sophisticated nowcasting approaches could be used to generate the nowcast samples.</p><h2 id="Methodology-overview"><a class="docs-heading-anchor" href="#Methodology-overview">Methodology overview</a><a id="Methodology-overview-1"></a><a class="docs-heading-anchor-permalink" href="#Methodology-overview" title="Permalink"></a></h2><p>The main functions we offer for inference and forecasting are:</p><ul><li><p><code>NowcastAutoGP.make_and_fit_model</code>: This wraps <code>AutoGP</code> functionality to make inference on the <strong>stable</strong> part of the time series data using sequential Monte Carlo (SMC) over sequences of data ingestion with <code>n_particle</code> SMC particles. Each particle represents a Gaussian process (GP) model for the time series, and at each data ingestion step this particle ensemble can be resampled. Within each SMC particle new possible GP kernel structures and hyperparmeter values are proposed using a specialised MCMC proposal distribution for structural choices (see <a href="https://probsys.github.io/AutoGP.jl/stable/api.html"><code>AutoGP</code> overview</a> for details) and HMC for continuous parameter samples.</p></li><li><p><code>NowcastAutoGP.forecast_with_nowcasts</code>: This batches over proposed nowcasts for recent data, incrementally adding nowcast <em>possible</em> data to make forecasts. The forecast distribution is the batch of forecasts over nowcasts of recent data.</p></li></ul><h1 id="Using-NowcastAutoGP-with-NHSN-hospitalisation-data"><a class="docs-heading-anchor" href="#Using-NowcastAutoGP-with-NHSN-hospitalisation-data">Using <code>NowcastAutoGP</code> with NHSN hospitalisation data</a><a id="Using-NowcastAutoGP-with-NHSN-hospitalisation-data-1"></a><a class="docs-heading-anchor-permalink" href="#Using-NowcastAutoGP-with-NHSN-hospitalisation-data" title="Permalink"></a></h1><h2 id="Loading-dependencies"><a class="docs-heading-anchor" href="#Loading-dependencies">Loading dependencies</a><a id="Loading-dependencies-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-dependencies" title="Permalink"></a></h2><pre><code class="language-julia hljs">using NowcastAutoGP
+using CairoMakie
+using Dates, Distributions, Random
+using CSV, TidierData
+using Parameters: @unpack
+
+Random.seed!(123)
+CairoMakie.activate!(type = &quot;png&quot;)</code></pre><h2 id="Loading-Surveillance-Data"><a class="docs-heading-anchor" href="#Loading-Surveillance-Data">Loading Surveillance Data</a><a id="Loading-Surveillance-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-Surveillance-Data" title="Permalink"></a></h2><p>We are going to demonstrate using <code>NowcastAutoGP</code> for forecasting the CDC&#39;s National Healthcare Safety Network (NHSN) reported Covid hospitalisations. We stored a vintaged data set locally.</p><pre><code class="language-julia hljs">datapath = joinpath(
+    pkgdir(NowcastAutoGP), &quot;docs&quot;, &quot;vignettes&quot;, &quot;data&quot;, &quot;vintaged_us_nhsn_data.csv&quot;
+)
+nhsn_vintage_covid_data = CSV.read(datapath, DataFrame)
+
+unique_dates = sort(unique(nhsn_vintage_covid_data.reference_date)) # Add time_index column for plotting (1 = minimum date, 2 = next date, etc.)
+d2index(d) = (d - minimum(unique_dates)).value
+
+nhsn_vintage_covid_data = @mutate(
+    nhsn_vintage_covid_data,
+    time_index = d2index(reference_date)
+)
+@glimpse(nhsn_vintage_covid_data)</code></pre><pre><code class="nohighlight hljs">Rows: 4102
+Columns: 8
+.reference_dateDates.Date     2022-10-01, 2022-10-01, 2022-10-01, 2022-10-01, 20
+.report_date   Dates.Date     2025-02-01, 2025-02-08, 2025-02-15, 2025-02-22, 20
+.confirm       Float64        26180.0, 26180.0, 26180.0, 26180.0, 26180.0, 26180
+.max_confirm   Float64        26150.0, 26150.0, 26150.0, 26150.0, 26150.0, 26150
+.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917,
+.multiplier    Float64        0.9988540870893812, 0.9988540870893812, 0.99885408
+.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us,
+.time_index    Int64          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+</code></pre><p>We see that the most recent report date, especially, is often revised upward eventually.</p><pre><code class="language-julia hljs">unique_report_dates = sort(unique(nhsn_vintage_covid_data.report_date))
+# Select every 4th report date, but always include the latest one
+selected_dates = unique_report_dates[1:4:end]
+if unique_report_dates[end] ∉ selected_dates
+    selected_dates = vcat(selected_dates, unique_report_dates[end])
+end
+n_dates = length(selected_dates)
+
+# Create figure
+fig = Figure(size = (800, 600))
+ax = Axis(
+    fig[1, 1],
+    xlabel = &quot;Reference Date&quot;,
+    ylabel = &quot;NHSN confirmed Covid hospitalisations&quot;,
+    title = &quot;Reference Date vs Confirm by Report Date (Oct 2024+, all US)&quot;
+)
+
+# Generate colors - latest date will be black
+colors = [i == n_dates ? :black : Makie.wong_colors()[mod1(i, 7)] for i in 1:n_dates]
+
+# Plot each selected report date using time_index
+for (report_date, color) in zip(selected_dates, colors)
+    date_data = @chain nhsn_vintage_covid_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    scatterlines!(
+        ax, date_data.time_index, date_data.confirm,
+        color = color,
+        label = string(report_date),
+        markersize = 8,
+        linewidth = 2
+    )
+end
+
+# Set up custom x-axis with date strings
+plot_start_date = Date(2024, 10, 1)
+plot_end_date = Date(2025, 10, 1)
+
+# Create tick positions and labels (show every 4 weeks ≈ monthly)
+tick_dates = range(plot_start_date, step = Week(4), length = 13)
+tick_indices = d2index.(tick_dates)
+tick_labels = [monthname(d)[1:3] * &quot;-&quot; * string(d)[(end - 1):end] for d in tick_dates]
+
+ax.xticks = (tick_indices, tick_labels)
+
+# Add legend
+axislegend(ax, &quot;report dates&quot;; position = :rt)
+xlims!(ax, d2index(plot_start_date), d2index(plot_end_date))
+ylims!(ax, 0, 2.2e4)
+resize_to_layout!(fig)
+fig</code></pre><p><img src="../getting-started-7.png" alt/></p><h3 id="Training-data"><a class="docs-heading-anchor" href="#Training-data">Training data</a><a id="Training-data-1"></a><a class="docs-heading-anchor-permalink" href="#Training-data" title="Permalink"></a></h3><p>We know that some recent periods have had bad reporting for NHSN, so we exclude them from the training data.</p><pre><code class="language-julia hljs">exclusion_periods = [
+    (Date(2024, 5, 1), Date(2024, 6, 1)),
+    (Date(2024, 10, 1), Date(2024, 11, 15)),
+]
+
+training_data = let
+    function in_any_period(d)
+        in_periods = [d &gt;= period[1] &amp;&amp; d &lt;= period[2] for period in exclusion_periods]
+        return ~any(in_periods)
+    end
+
+    @chain nhsn_vintage_covid_data begin
+        @filter(in_any_period(reference_date))
+    end
+end
+@glimpse(training_data)</code></pre><pre><code class="nohighlight hljs">Rows: 3772
+Columns: 8
+.reference_dateDates.Date     2022-10-01, 2022-10-01, 2022-10-01, 2022-10-01, 20
+.report_date   Dates.Date     2025-02-01, 2025-02-08, 2025-02-15, 2025-02-22, 20
+.confirm       Float64        26180.0, 26180.0, 26180.0, 26180.0, 26180.0, 26180
+.max_confirm   Float64        26150.0, 26150.0, 26150.0, 26150.0, 26150.0, 26150
+.lag           Int64          854, 861, 868, 875, 882, 889, 896, 903, 910, 917,
+.multiplier    Float64        0.9988540870893812, 0.9988540870893812, 0.99885408
+.geo_value     InlineStrings.String3us, us, us, us, us, us, us, us, us, us, us,
+.time_index    Int64          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+</code></pre><h3 id="Utility-functions"><a class="docs-heading-anchor" href="#Utility-functions">Utility functions</a><a id="Utility-functions-1"></a><a class="docs-heading-anchor-permalink" href="#Utility-functions" title="Permalink"></a></h3><p>We add two utility functions to this tutorial that wrap some <code>NowcastAutoGP</code> capabilities:</p><p>A <code>fit_on_data</code> function that does the core workflow on confirmed data:</p><ol><li>Transforms the time series into the unconstrained domain. We use an optimized Box-Cox transform to &quot;normalize&quot; the data.</li><li>Redact some of the recent data, either for poor quality or in preparation for nowcasting.</li><li>Passes to the <code>make_and_fit_model</code> function from <code>NowcastAutoGP</code>.</li></ol><pre><code class="language-julia hljs">function fit_on_data(
+        report_date;
+        n_redact,
+        max_ahead = 8,
+        training_data = training_data,
+        n_particles = 24, # number of SMC particles, i.e. GP models, to maintain in the ensemble
+        smc_data_proportion = 0.1, # proportion of data to ingest per SMC step, by default shuffled batches
+        n_mcmc = 50, n_hmc = 50 # number of MCMC and HMC steps to run after each SMC step for particle refinement/refresh
+    )
+
+    # Filter for correct report date
+    date_data = @chain training_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    # Dates to forecast
+    forecast_dates = [maximum(date_data.reference_date) + Week(k) for k in 0:max_ahead]
+
+    transformation, inv_transformation = get_transformations(&quot;boxcox&quot;, date_data.confirm)
+    data_to_fit = create_transformed_data(
+        date_data.reference_date[1:(end - n_redact)],
+        date_data.confirm[1:(end - n_redact)]; transformation
+    )
+    data_to_revise = (
+        revise_dates = date_data.reference_date[(end - n_redact + 1):end],
+        revise_values = date_data.confirm[(end - n_redact + 1):end],
+    )
+    model = make_and_fit_model(
+        data_to_fit;
+        n_particles,
+        smc_data_proportion,
+        n_mcmc, n_hmc
+    )
+    return model, forecast_dates, transformation, inv_transformation, data_to_revise
+end</code></pre><p>We also give a handy plotting utility for plotting our results.</p><pre><code class="language-julia hljs">function plot_with_forecasts(
+        forecasts, title::String;
+        n_ahead,
+        selected_dates,
+        colors = colors,
+        covid_data = nhsn_vintage_covid_data,
+        plot_start_date = plot_start_date,
+        plot_end_date = plot_end_date,
+        y_lim_up = 2.2e4,
+        size = (1000, 700),
+        xticks = (tick_indices, tick_labels)
+    )
+    fig = Figure(size = size)
+    ax = Axis(
+        fig[1, 1],
+        xlabel = &quot;Date&quot;,
+        ylabel = &quot;NHSN confirmed Covid hospitalizations&quot;,
+        title = title
+    )
+
+    # Plot forecasts
+    for (report_date, forecast, color) in zip(selected_dates, forecasts, colors)
+        date_data = @chain nhsn_vintage_covid_data begin
+            @filter(report_date == !!report_date)
+            @arrange(reference_date)
+        end
+
+        # Plot historical data as light lines
+        scatterlines!(
+            ax, date_data.time_index, date_data.confirm,
+            color = color,
+            linewidth = 2,
+            label = &quot;$(report_date) data&quot;
+        )
+
+        # Extract quantiles for forecasts
+        q25 = forecast.iqrs[1:n_ahead, 1]
+        median = forecast.iqrs[1:n_ahead, 2]
+        q75 = forecast.iqrs[1:n_ahead, 3]
+        forecast_indices = d2index.(forecast.dates)[1:n_ahead]
+
+        # Plot uncertainty band (25%-75%)
+        band!(
+            ax, forecast_indices, q25, q75,
+            color = (color, 0.3)
+        )
+
+        # Plot median forecast
+        lines!(
+            ax, forecast_indices, median,
+            color = color,
+            linewidth = 3,
+            linestyle = :dash
+        )
+    end
+
+    # Add legend
+    axislegend(ax, &quot;report dates&quot;; position = :rt)
+    xlims!(ax, d2index(plot_start_date), d2index(plot_end_date))
+    ylims!(ax, 0, y_lim_up)
+    ax.xticks = xticks
+    resize_to_layout!(fig)
+    return fig
+end</code></pre><h2 id="Fitting-models-on-different-report-dates"><a class="docs-heading-anchor" href="#Fitting-models-on-different-report-dates">Fitting models on different report dates</a><a id="Fitting-models-on-different-report-dates-1"></a><a class="docs-heading-anchor-permalink" href="#Fitting-models-on-different-report-dates" title="Permalink"></a></h2><p>Most of the nowcasting revision happens in the most recent week, so as a first step we will fit models on different report dates redacting each most recent week. These fitted models represent an <code>AutoGP</code> fit to the &quot;confirmed&quot; data on each report date. In the next section we will use these fits to make forecasts with different nowcasting approaches.</p><pre><code class="language-julia hljs">fitted_models_by_report_date = map(selected_dates) do report_date
+    model, forecast_dates,
+        transformation,
+        inv_transformation,
+        data_to_revise = fit_on_data(
+        report_date;
+        n_redact = 1,
+        training_data = training_data,
+        n_particles = 4
+    )
+    return (
+        model_dict = Dict(model), forecast_dates = forecast_dates,
+        transformation = transformation, inv_transformation = inv_transformation,
+        data_to_revise = data_to_revise,
+    )
+end</code></pre><pre><code class="nohighlight hljs">[ Info: Using Box-Cox transformation with λ = 0.22131240688077408 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.20417626199072905 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.16610573403843354 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.121124688924113 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.11522816443710317 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.12383606867895428 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.09504558934153737 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.04783408834285875 and offset = 0.0
+[ Info: Using Box-Cox transformation with λ = 0.04071498264851919 and offset = 0.0
+</code></pre><h2 id="Forecasting"><a class="docs-heading-anchor" href="#Forecasting">Forecasting</a><a id="Forecasting-1"></a><a class="docs-heading-anchor-permalink" href="#Forecasting" title="Permalink"></a></h2><p>In this section we will use the fitted models to make forecasts of future confirmed hospitalisations. We will compare four approaches:</p><ol><li>Forecasting naively.</li><li>Removing uncertain data.</li><li>Forecasting with a simple nowcast without refreshing the particles with HMC.</li><li>Forecasting with a simple nowcast with HMC refreshing between nowcast draws.</li><li>Forecasting with a simple nowcast with HMC refreshing between forecast draws.</li></ol><h3 id="Approach-1:-Forecasting-naively"><a class="docs-heading-anchor" href="#Approach-1:-Forecasting-naively">Approach 1: Forecasting naively</a><a id="Approach-1:-Forecasting-naively-1"></a><a class="docs-heading-anchor-permalink" href="#Approach-1:-Forecasting-naively" title="Permalink"></a></h3><p>Naively, we could just use the latest reported data without considering revisions. This approach is equivalent to creating the &quot;nowcast&quot; by taking the latest reported data as the best estimate of the eventual data, which is a common mistake when using data with reporting delays. This will be biased because we know that typically the most recent data will be revised upwards, but represents a common error when using this data stream.</p><pre><code class="language-julia hljs">n_forecasts = 2000
+naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+    # Create a &quot;naive&quot; nowcast by taking the latest reported data as the best estimate of the eventual data
+    # NB: we wrap the single nowcast in a vector to be compatible with the nowcast input &quot;vector of vectors&quot; format
+    naive_nowcasts = create_nowcast_data(
+        [data_to_revise.revise_values], data_to_revise.revise_dates;
+        transformation = transformation
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, naive_nowcasts, forecast_dates, n_forecasts;
+        inv_transformation = inv_transformation, ess_threshold = 1.0
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end</code></pre><p>When we plot we see that the unrevised data consistently underestimates the eventual counts, which leads to poor forecasting.</p><pre><code class="language-julia hljs">plot_with_forecasts(
+    naive_forecasts_by_reference_date, &quot;Forecasts from Different Report Dates (naive)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../getting-started-19.png" alt/></p><h3 id="Approach-2:-Removing-uncertain-data"><a class="docs-heading-anchor" href="#Approach-2:-Removing-uncertain-data">Approach 2: Removing uncertain data</a><a id="Approach-2:-Removing-uncertain-data-1"></a><a class="docs-heading-anchor-permalink" href="#Approach-2:-Removing-uncertain-data" title="Permalink"></a></h3><p>We note that the problem is <em>mainly</em> with the most recent week of hospitalisation reports. Therefore, another strategy could be to simply redact that week.</p><pre><code class="language-julia hljs">leave_out_last_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    forecasts = forecast(model, forecast_dates, n_forecasts; inv_transformation)
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end</code></pre><p>This looks improved but the forecasts have quite large prediction intervals (we have effectively bumped the forecast horizon by one week).</p><pre><code class="language-julia hljs">plot_with_forecasts(
+    leave_out_last_forecasts_by_reference_date,
+    &quot;Forecasts from Different Report Dates (Leave out last week)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../getting-started-23.png" alt/></p><h3 id="Approaches-3-5:-Forecasting-with-a-simple-nowcast"><a class="docs-heading-anchor" href="#Approaches-3-5:-Forecasting-with-a-simple-nowcast">Approaches 3-5: Forecasting with a simple nowcast</a><a id="Approaches-3-5:-Forecasting-with-a-simple-nowcast-1"></a><a class="docs-heading-anchor-permalink" href="#Approaches-3-5:-Forecasting-with-a-simple-nowcast" title="Permalink"></a></h3><p>Now lets consider a really simple nowcasting model. Over recent vintages we notice that the most recent week gets revised significantly but other weeks are fairly stable. Therefore, we fit the ratio of last weeks report to last weeks eventual reported to a LogNormal. The MLE fit for this was LogNormal(logmean = 0.1, logstd = 0.027).</p><p>We generate 100 nowcast samples for the most recent week, across all report dates, by sampling from this distribution and multiplying by the latest reported value for that week.</p><pre><code class="language-julia hljs">n_nowcast_samples = 100
+# Simple nowcast on most recent data where we suspect significant revisions
+
+all_nowcast_samples = map(fitted_models_by_report_date) do fitted_model
+    @unpack data_to_revise = fitted_model
+
+    nowcast_samples = [
+        [data_to_revise.revise_values[end] * exp(0.1 + randn() * 0.027)]
+            for _ in 1:n_nowcast_samples
+    ]
+end</code></pre><p>We can use <code>forecast_with_nowcasts</code> to batch 20 forecasts per nowcast signal on top of the inference done in step one.</p><p>This is a very simple nowcasting approach! Note that cached nowcasts from a more sophisticated approach, such as a full generative model defined by e.g. <a href="https://package.epinowcast.org/"><code>epinowcast</code></a> or <a href="https://baselinenowcast.epinowcast.org/"><code>baselinenowcast</code></a>, could have been deserialized into this approach.</p><p>We compare three variants:</p><ul><li><strong>Approach 3</strong> uses the original forecasting method, drawing all forecast samples from the mixture distribution over the weighted particles representing an ensemble of GP models. In this variant we don&#39;t enable any HMC steps to refresh the particle ensemble after incorporating the nowcast samples.</li><li><strong>Approach 4</strong> as approach 3, but updates the GP hyperparameters with an HMC refinement step between each <em>nowcast draw</em> (<code>n_hmc=1</code>), which allows the GP <em>particles</em> to adapt to the new data and increases the diversity of the forecast ensemble.</li><li><strong>Approach 5</strong> as approach 3, but interleaves HMC refinement steps between each <em>forecast draw</em> (<code>forecast_n_hmc=1</code>), which increases the diversity of the forecast ensemble by more than Approach 4, but is more computationally expensive.</li></ul><p>Note that approach 5 is a mitigation strategy for having a particle ensemble that is too small to capture the posterior distribution over GP hyperparameters, which could lead to underdispersed forecasts. If you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5.</p><h4 id="Approach-3:-Nowcast-without-HMC-steps"><a class="docs-heading-anchor" href="#Approach-3:-Nowcast-without-HMC-steps">Approach 3: Nowcast without HMC steps</a><a id="Approach-3:-Nowcast-without-HMC-steps-1"></a><a class="docs-heading-anchor-permalink" href="#Approach-3:-Nowcast-without-HMC-steps" title="Permalink"></a></h4><pre><code class="language-julia hljs">nowcast_no_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end
+
+plot_with_forecasts(
+    nowcast_no_hmc_forecasts_by_reference_date,
+    &quot;Forecasts from Different Report Dates (Nowcast, no HMC)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../getting-started-27.png" alt/></p><h4 id="Approach-4:-Nowcast-with-HMC-step-after-each-nowcast-draw"><a class="docs-heading-anchor" href="#Approach-4:-Nowcast-with-HMC-step-after-each-nowcast-draw">Approach 4: Nowcast with HMC step after each nowcast draw</a><a id="Approach-4:-Nowcast-with-HMC-step-after-each-nowcast-draw-1"></a><a class="docs-heading-anchor-permalink" href="#Approach-4:-Nowcast-with-HMC-step-after-each-nowcast-draw" title="Permalink"></a></h4><p>Using the same nowcasting setup, we now enable a HMC step for each particle to refresh the GP hyperparameters after incorporating each nowcast sample. Forecasts are then drawn from the refreshed particle ensemble without further HMC steps between forecast draws. This allows the GP hyperparameters to be refined for each nowcast sample, producing a more diverse and better-calibrated forecast ensemble.</p><pre><code class="language-julia hljs">nowcast_nc_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation, n_hmc = 1, verbose = true
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end
+
+
+plot_with_forecasts(
+    nowcast_nc_hmc_forecasts_by_reference_date,
+    &quot;Forecasts from Different Report Dates (Nowcast, with HMC refresh each nowcast)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../getting-started-29.png" alt/></p><h4 id="Approach-5:-Nowcast-with-HMC-step-after-each-forecast-draw"><a class="docs-heading-anchor" href="#Approach-5:-Nowcast-with-HMC-step-after-each-forecast-draw">Approach 5: Nowcast with HMC step after each forecast draw</a><a id="Approach-5:-Nowcast-with-HMC-step-after-each-forecast-draw-1"></a><a class="docs-heading-anchor-permalink" href="#Approach-5:-Nowcast-with-HMC-step-after-each-forecast-draw" title="Permalink"></a></h4><p>We now enable interleaved HMC parameter refinement between <em>forecast draws</em>. This allows the GP hyperparameters to be refined between each forecast sample, which better reflects the posterior distribution over hyperparameters than approach 4, which only refines hyperparameters between nowcast samples. This can lead to a more diverse and better-calibrated forecast ensemble, but is more computationally expensive. Note that if you have a large enough particle ensemble, approach 4 will be sufficient and equivalent to approach 5, as the particle ensemble will already capture the posterior distribution over hyperparameters well enough that further HMC steps between forecast draws won&#39;t add much diversity.</p><pre><code class="language-julia hljs">nowcast_dr_hmc_forecasts_by_reference_date = map(
+    fitted_models_by_report_date, all_nowcast_samples
+) do fitted_model, nowcast_samples
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    nowcasts = create_nowcast_data(
+        nowcast_samples, [data_to_revise.revise_dates[end]];
+        transformation = transformation
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, nowcasts, forecast_dates, n_forecasts ÷ n_nowcast_samples;
+        inv_transformation, forecast_n_hmc = 1, n_hmc = 0, verbose = true
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end
+
+plot_with_forecasts(
+    nowcast_dr_hmc_forecasts_by_reference_date,
+    &quot;Forecasts from Different Report Dates (Nowcast, with HMC refresh each forecast)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../getting-started-31.png" alt/></p><h2 id="Scoring"><a class="docs-heading-anchor" href="#Scoring">Scoring</a><a id="Scoring-1"></a><a class="docs-heading-anchor-permalink" href="#Scoring" title="Permalink"></a></h2><p>To evaluate the quality of our different forecasting approaches, we use the proper scoring rule <strong>Continuous Ranked Probability Score (CRPS)</strong>. A proper scoring rule is a function that assigns a numerical score to a probabilistic forecast, with the property that the score is optimized (in expectation) when the forecast distribution matches the true data distribution.</p><p>CRPS is a proper scoring rule that generalizes absolute error, i.e. mean absolute error (MAE), to being a proper score for probabilistic forecasts. For a forecast distribution <span>$F(x) = P(X \leq x)$</span> and observed outcome <span>$y$</span>, the CRPS score is defined as:</p><p class="math-container">\[\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]\]</p><p>where the first term measures the distance between the forecast ensemble and the observation, and the second term measures the spread of the forecast ensemble.</p><p>For a forecast ensemble <span>$X = \{X_1, X_2, \ldots, X_n\}$</span>, this can be estimated using an empirical sum.</p><p><strong>Note:</strong> For production forecasting evaluation, we recommend using the comprehensive <a href="https://epiforecasts.io/scoringutils/"><code>scoringutils</code></a> R package, which provides robust implementations of proper scoring rules, forecast evaluation diagnostics, and visualization tools specifically designed for epidemiological forecasting.</p><p>Let&#39;s implement a simple CRPS function and functions for getting the mean CRPS score over reporting dates and forecast horizons in order to compare our five forecasting approaches:</p><pre><code class="language-julia hljs">function crps(y::Real, X::Vector{&lt;:Real})
+    n = length(X)
+
+    # First term: E|X - y|
+    term1 = mean(abs.(X .- y))
+
+    # Second term: E|X_1 - X_2|
+    # Calculate all ordered pairwise differences
+    ordered_pairwise_diffs = [abs(X[i] - X[j]) for i in 1:n for j in (i + 1):n]
+    term2 = mean(ordered_pairwise_diffs)
+
+    # CRPS = E|X - y| - 0.5 * E|X_1 - X_2|
+    return term1 - 0.5 * term2
+end
+
+function score_forecast(
+        latestdata, forecast_dates, F; max_horizon = 4, data_transform = x -&gt; x
+    )
+    @assert max_horizon &lt;= length(forecast_dates) &quot;Not enough data to score full horizon&quot;
+    score_dates = forecast_dates[1:max_horizon]
+    scorable_data = @filter(latestdata, reference_date in !!score_dates)
+    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y,
+            X
+        crps(data_transform(y), data_transform.(X))
+    end
+    return S / max_horizon
+end
+
+function score_all_forecasts(latestdata, forecasts; max_horizon = 4, data_transform = x -&gt; x)
+    total_score = mapreduce(+, forecasts; init = 0.0) do F
+        forecast_dates = F.dates
+        score_forecast(latestdata, forecast_dates, F; max_horizon, data_transform)
+    end
+    return total_score / length(forecasts)
+end</code></pre><p>We can apply the scoring to each forecasting method, leaving out the most recent forecasts (where we don&#39;t have all the data to score them).</p><pre><code class="language-julia hljs">most_recent_report_date = maximum(selected_dates)
+latestdata = @filter(nhsn_vintage_covid_data, report_date == !!most_recent_report_date)
+
+scores = map(
+    [
+        naive_forecasts_by_reference_date,
+        leave_out_last_forecasts_by_reference_date,
+        nowcast_no_hmc_forecasts_by_reference_date,
+        nowcast_nc_hmc_forecasts_by_reference_date,
+        nowcast_dr_hmc_forecasts_by_reference_date
+    ]
+) do F
+    score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = log)
+end</code></pre><p>Then we can plot these scores as score ratios relative to the best approach (nowcast with HMC step per forecast draw).</p><pre><code class="language-julia hljs"># Calculate score ratios compared to nowcast with HMC (baseline)
+baseline_score = scores[end] # nowcast with HMC step per forecast draw is the last in the list
+score_ratios = [score / baseline_score for score in scores]
+
+# Create bar plot comparing score ratios
+method_names = [&quot;Naive&quot;, &quot;Leave Out\nLast&quot;, &quot;Nowcast\n(no HMC)&quot;, &quot;Nowcast\n(NC HMC)&quot;, &quot;Nowcast\n(DR HMC)&quot;]
+
+fig = Figure(size = (700, 400))
+ax = Axis(
+    fig[1, 1],
+    xlabel = &quot;Forecasting Method&quot;,
+    ylabel = &quot;Score Ratio&quot;,
+    title = &quot;Forecast Performance: Score Ratios over approaches (lower is better)&quot;
+)
+
+# Create bar plot with different colors based on performance
+bar_colors = [ratio &gt; 1.05 ? :red : abs(ratio - 1) &lt; 0.05 ? :green : :blue for ratio in score_ratios]
+barplot!(
+    ax, 1:5, score_ratios,
+    color = bar_colors,
+    alpha = 0.7,
+    strokewidth = 2,
+    strokecolor = :black
+)
+
+# Add value labels on top of bars
+for (i, ratio) in enumerate(score_ratios)
+    text!(
+        ax, i, ratio + 0.02, text = string(round(ratio, digits = 2)),
+        align = (:center, :bottom), fontsize = 12
+    )
+end
+
+# Add horizontal line at y=1 for reference (baseline)
+hlines!(ax, [1], color = :black, linestyle = :dash, linewidth = 1)
+
+# Set x-axis labels
+ax.xticks = (1:5, method_names)
+
+# Add some padding to y-limits
+y_max = maximum(score_ratios)
+ylims!(ax, 0.8, y_max + 0.1)
+
+resize_to_layout!(fig)
+fig</code></pre><p><img src="../getting-started-37.png" alt/></p><h3 id="Results-and-Interpretation"><a class="docs-heading-anchor" href="#Results-and-Interpretation">Results and Interpretation</a><a id="Results-and-Interpretation-1"></a><a class="docs-heading-anchor-permalink" href="#Results-and-Interpretation" title="Permalink"></a></h3><p>The score ratios clearly show progressive improvement across approaches:</p><ol><li><p><strong>Naive forecasting performs worst</strong> - The score ratio shows that naive forecasting is significantly worse than the baseline (ratio &gt; 1), demonstrating that using the most recent reported data without any adjustment for reporting delays leads to systematically poor forecast accuracy. This approach fails to account for the known issue that recent hospitalizations are significantly under-reported.</p></li><li><p><strong>Leaving out the last week shows intermediate performance</strong> - This approach achieves a score ratio between the naive method and the nowcasting approaches, indicating improved performance over naive forecasting but still worse than nowcasting. While excluding the most recent (and most uncertain) week removes problematic bias due to reporting delay, it effectively increases our forecast horizon by one week, leading to overdispersed predictions.</p></li><li><p><strong>Batched forecasts over nowcasts performed best</strong> - Batching over nowcast samples significantly improves forecast skill, with the simple nowcast outperforming the naive and leave-out approaches. This demonstrates that even a simple nowcasting model that adjusts for expected revisions in recent data can substantially enhance forecast performance. Increasing the diversity of the forecast ensemble with HMC steps offered marginal improvements, suggesting that while hyperparameter refinement can help, the main gains come from incorporating nowcast adjustments.</p></li></ol><p>These results support the core motivation for <code>NowcastAutoGP</code> - that combining nowcasting with time series modeling can significantly improve forecast skill in real-world surveillance scenarios where reporting delays are common.</p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../">« Home</a><a class="docs-footer-nextpage" href="../../api/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.16.1 on <span class="colophon-date" title="Friday 20 February 2026 14:21">Friday 20 February 2026</span>. Using Julia version 1.12.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
