@@ -22,7 +22,6 @@ Generate forecast samples from a fitted `AutoGP` model.
 # Keyword arguments
 - `inv_transformation`: Function applied elementwise to map forecasts back to the original scale (default: identity).
 - `forecast_n_hmc`: If `nothing`, draw from the current model state. If an `Int`, run that many HMC parameter steps before each draw (default: `nothing`).
-- `verbose`: If `true`, display progress information during forecasting (default: `false`).
 
 # Returns
 - A matrix of samples with size `(length(forecast_dates), forecast_draws)`.
@@ -43,8 +42,10 @@ function _forecast(
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    dist = AutoGP.predict_mvn(model, dates_vector)
-    _forecasts = rand(dist, forecast_draws)
+    _forecasts = _with_single_blas() do
+        dist = AutoGP.predict_mvn(model, dates_vector)
+        rand(dist, forecast_draws)
+    end
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)
     return forecasts
