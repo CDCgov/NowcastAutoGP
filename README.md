@@ -30,13 +30,13 @@ Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
 
 `NowcastAutoGP.jl` allows the user to incorporate nowcasting with ensemble Gaussian process (GP) forecasting provided by `AutoGP.jl`. In the example below, we show forecasting with the "naive" belief that the most recent reported data is accurate and final, compared to forecasting that incorporates simple nowcasting that accounts for a reporting multiplicative factor based on historical reporting patterns.
 
-![Naive forecasting showing underestimation](docs/src/assets/tutorial/cell-10-output-1.png)
+![Naive forecasting showing underestimation](docs/src/vignettes/getting-started-19.png)
 *Naive forecasting consistently underestimates due to reporting delays*
 
-![Forecasts with simple nowcasting](docs/src/assets/tutorial/cell-14-output-1.png)
+![Forecasts with simple nowcasting](docs/src/vignettes/getting-started-31.png)
 *Forecasts incorporating simple nowcasting show improved accuracy*
 
-![Performance comparison](docs/src/assets/tutorial/cell-17-output-1.png)
+![Performance comparison](docs/src/vignettes/getting-started-37.png)
 *Score ratios demonstrate clear performance improvements with nowcasting*
 
 ## Documentation

@@ -15,21 +15,21 @@ jobs:
       matrix:
         include:
           # Ubuntu x64
-          - version: '1.10'
+          - version: '1.11'
             os: ubuntu-latest
             arch: x64
           - version: '1'
             os: ubuntu-latest
             arch: x64
           # Windows x64
-          - version: '1.10'
+          - version: '1.11'
             os: windows-latest
             arch: x64
           - version: '1'
             os: windows-latest
             arch: x64
           # macOS (use default arch - Apple Silicon on latest runners)
-          - version: '1.10'
+          - version: '1.11'
             os: macOS-latest
             arch: aarch64
           - version: '1'

@@ -22,31 +22,30 @@ Generate forecast samples from a fitted `AutoGP` model.
 # Keyword arguments
 - `inv_transformation`: Function applied elementwise to map forecasts back to the original scale (default: identity).
 - `forecast_n_hmc`: If `nothing`, draw from the current model state. If an `Int`, run that many HMC parameter steps before each draw (default: `nothing`).
-- `verbose`: If `true`, display progress information during forecasting (default: `false`).
 
 # Returns
 - A matrix of samples with size `(length(forecast_dates), forecast_draws)`.
 """
 function forecast(
         model::AutoGP.GPModel, forecast_dates, forecast_draws::Int;
-        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing,
-        verbose::Bool = false
+        inv_transformation = y -> y, forecast_n_hmc::Union{Int, Nothing} = nothing
     )
     return _forecast(
         model, forecast_dates, forecast_draws, forecast_n_hmc;
-        inv_transformation = inv_transformation, verbose = verbose
+        inv_transformation = inv_transformation
     )
 end
 
 function _forecast(
         model, forecast_dates, forecast_draws::Int, ::Nothing;
-        inv_transformation = y -> y, verbose::Bool = false
+        inv_transformation = y -> y
     )
-    verbose && @info "Using multivariate normal forecast from current model state."
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
-    _forecasts = rand(dist, forecast_draws)
+    _forecasts = _with_single_blas() do
+        dist = AutoGP.predict_mvn(model, dates_vector)
+        rand(dist, forecast_draws)
+    end
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)
     return forecasts
@@ -54,19 +53,20 @@ end
 
 function _forecast(
         model, forecast_dates, forecast_draws::Int, forecast_n_hmc::Int;
-        inv_transformation = y -> y, verbose::Bool = false
+        inv_transformation = y -> y
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    progress = Progress(forecast_draws; desc = "Forecasting with HMC: ", enabled = verbose)
-    _forecasts = mapreduce(hcat, 1:forecast_draws) do _
-        # Refine the GP models with HMC steps to incorporate the new data into
-        # hyperparameters but not structure
-        AutoGP.mcmc_parameters!(model, forecast_n_hmc)
-        dist = _with_single_blas(() -> AutoGP.predict_mvn(model, dates_vector))
-        sample = rand(dist)
-        next!(progress)
-        sample
+    n_dates = length(dates_vector)
+    _forecasts = _with_single_blas() do
+        out = Matrix{Float64}(undef, n_dates, forecast_draws)
+        for i in 1:forecast_draws
+            # Refine the GP models with HMC steps for each forecast draw
+            AutoGP.mcmc_parameters!(model, forecast_n_hmc)
+            dist = AutoGP.predict_mvn(model, dates_vector)
+            out[:, i] = rand(dist)
+        end
+        return out
     end
 
     # Apply inverse transformation to the forecasts
@@ -122,38 +122,46 @@ function forecast_with_nowcasts(
     )
     @assert !isempty(nowcasts) "nowcasts vector must not be empty"
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
+    @assert 0.0 <= ess_threshold <= 1.0 "ess_threshold must be between 0 and 1"
+    @assert forecast_n_hmc === nothing||forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
 
     base_model_dict = Dict(base_model)
-    # Process each nowcast scenario
-    forecasts_over_nowcasts = mapreduce(hcat, nowcasts) do nowcast
-        model_for_batch = AutoGP.GPModel(base_model_dict) # Create a copy of the base model for this scenario
-        # Add the nowcast data to the model
-        AutoGP.add_data!(model_for_batch, nowcast.ds, nowcast.y)
+    progress = Progress(length(nowcasts); desc = "Nowcast scenarios: ", enabled = verbose)
+    # Process each nowcast scenario in parallel (requires Julia 1.11+ for safe @threads nesting)
+    tasks = map(nowcasts) do nowcast
+        Threads.@spawn begin
+            model_for_batch = AutoGP.GPModel(deepcopy(base_model_dict))
+            # Add the nowcast data to the model
+            AutoGP.add_data!(model_for_batch, nowcast.ds, nowcast.y)
 
-        # Resample particles if effective sample size is below threshold
+            # Resample particles if effective sample size is below threshold
+            AutoGP.maybe_resample!(
+                model_for_batch, ess_threshold *
+                    AutoGP.num_particles(model_for_batch)
+            )
 
-        AutoGP.maybe_resample!(
-            model_for_batch, ess_threshold *
-                AutoGP.num_particles(model_for_batch)
-        )
+            # Optional: Refine the GP models with MCMC steps to incorporate the new data
+            # into the kernel structure
+            if n_mcmc > 0 && n_hmc > 0
+                AutoGP.mcmc_structure!(model_for_batch, n_mcmc, n_hmc)
+            elseif n_mcmc == 0 && n_hmc > 0
+                AutoGP.mcmc_parameters!(model_for_batch, n_hmc)
+            end
 
-        # Optional: Refine the GP models with MCMC steps to incorporate the new data
-        # into the kernel structure
-        if n_mcmc > 0 && n_hmc > 0
-            AutoGP.mcmc_structure!(model_for_batch, n_mcmc, n_hmc)
-        elseif n_mcmc == 0 && n_hmc > 0 # Optional: Refine the GP models with HMC steps to incorporate the new data into hyperparameters but not structure
-            AutoGP.mcmc_parameters!(model_for_batch, n_hmc)
+            # Generate forecasts for this nowcast scenario (verbose=false to avoid per-scenario noise)
+            scenario_forecasts = forecast(
+                model_for_batch, forecast_dates, forecast_draws_per_nowcast;
+                inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc
+            )
+
+            scenario_forecasts
         end
-
-        # Generate forecasts for this nowcast scenario
-        scenario_forecasts = forecast(
-            model_for_batch, forecast_dates, forecast_draws_per_nowcast;
-            inv_transformation = inv_transformation, forecast_n_hmc = forecast_n_hmc,
-            verbose = verbose
-        )
-
-        return scenario_forecasts
     end
 
-    return forecasts_over_nowcasts
+    results = map(tasks) do t
+        r = fetch(t)
+        next!(progress)
+        r
+    end
+    return hcat(results...)
 end

@@ -5,7 +5,8 @@ using LinearAlgebra: BLAS
 using LogExpFunctions: logit, logistic
 using ProgressMeter: @showprogress, Progress, next!
 
-export TData
+const GPModel = AutoGP.GPModel # re-exporting for convenience
+export TData, GPModel
 export create_transformed_data, get_transformations, make_and_fit_model, forecast,
     forecast_with_nowcasts, create_nowcast_data
 

@@ -1,6 +1,13 @@
 using Documenter
 using NowcastAutoGP
 
+# Doc pages
+pages = [
+    "Home" => "index.md",
+    "Getting Started" => "vignettes/getting-started.md",
+    "API Reference" => "api.md",
+]
+
 makedocs(
     sitename = "NowcastAutoGP.jl",
     authors = "Centers for Disease Control and Prevention",
@@ -11,11 +18,7 @@ makedocs(
         assets = ["assets/material-theme.css", "assets/material-theme.js"],
         mathengine = Documenter.MathJax3()
     ),
-    pages = [
-        "Home" => "index.md",
-        "Getting started" => "vignettes/tutorial.md",
-        "API Reference" => "api.md",
-    ],
+    pages = pages,
     clean = true,
     checkdocs = :exports
 )

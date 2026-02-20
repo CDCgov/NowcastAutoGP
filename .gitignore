@@ -386,4 +386,4 @@ doc_development.md
 test_development.md
 
 # Tutorial images
-!docs/src/assets/tutorial/*.png
+!docs/src/vignettes/*.png
