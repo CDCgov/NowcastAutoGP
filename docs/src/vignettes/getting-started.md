@@ -411,7 +411,6 @@ fitted_models_by_report_date = map(selected_dates) do report_date
         report_date;
         n_redact = 1,
         training_data = training_data,
-        n_particles = 4
     )
     return (
         model_dict = Dict(model), forecast_dates = forecast_dates,
@@ -423,14 +422,32 @@ end
 
 ````
 [ Info: Using Box-Cox transformation with λ = 0.22131240688077408 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.20417626199072905 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.16610573403843354 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.121124688924113 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.11522816443710317 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.12383606867895428 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.09504558934153737 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.04783408834285875 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 [ Info: Using Box-Cox transformation with λ = 0.04071498264851919 and offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
 
 ````
 
@@ -644,7 +661,6 @@ nowcast_nc_hmc_forecasts_by_reference_date = map(
     return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
 end
 
-
 plot_with_forecasts(
     nowcast_nc_hmc_forecasts_by_reference_date,
     "Forecasts from Different Report Dates (Nowcast, with HMC refresh each nowcast)";
@@ -753,14 +769,19 @@ function score_forecast(
     @assert max_horizon <= length(forecast_dates) "Not enough data to score full horizon"
     score_dates = forecast_dates[1:max_horizon]
     scorable_data = @filter(latestdata, reference_date in !!score_dates)
-    S = mapreduce(+, scorable_data.confirm[1:max_horizon], eachrow(F.forecasts[1:max_horizon, :])) do y,
+    S = mapreduce(
+        +, scorable_data.confirm[1:max_horizon],
+        eachrow(F.forecasts[1:max_horizon, :])
+    ) do y,
             X
         crps(data_transform(y), data_transform.(X))
     end
     return S / max_horizon
 end
 
-function score_all_forecasts(latestdata, forecasts; max_horizon = 4, data_transform = x -> x)
+function score_all_forecasts(
+        latestdata, forecasts; max_horizon = 4, data_transform = x -> x
+    )
     total_score = mapreduce(+, forecasts; init = 0.0) do F
         forecast_dates = F.dates
         score_forecast(latestdata, forecast_dates, F; max_horizon, data_transform)
@@ -782,7 +803,7 @@ scores = map(
         leave_out_last_forecasts_by_reference_date,
         nowcast_no_hmc_forecasts_by_reference_date,
         nowcast_nc_hmc_forecasts_by_reference_date,
-        nowcast_dr_hmc_forecasts_by_reference_date
+        nowcast_dr_hmc_forecasts_by_reference_date,
     ]
 ) do F
     score_all_forecasts(latestdata, F[1:(end - 2)]; data_transform = log)
@@ -798,7 +819,10 @@ baseline_score = scores[end] # nowcast with HMC step per forecast draw is the la
 score_ratios = [score / baseline_score for score in scores]
 
 # Create bar plot comparing score ratios
-method_names = ["Naive", "Leave Out\nLast", "Nowcast\n(no HMC)", "Nowcast\n(NC HMC)", "Nowcast\n(DR HMC)"]
+method_names = [
+    "Naive", "Leave Out\nLast", "Nowcast\n(no HMC)",
+    "Nowcast\n(NC HMC)", "Nowcast\n(DR HMC)",
+]
 
 fig = Figure(size = (700, 400))
 ax = Axis(
@@ -809,7 +833,10 @@ ax = Axis(
 )
 
 # Create bar plot with different colors based on performance
-bar_colors = [ratio > 1.05 ? :red : abs(ratio - 1) < 0.05 ? :green : :blue for ratio in score_ratios]
+bar_colors = [
+    ratio > 1.05 ? :red : abs(ratio - 1) < 0.05 ? :green : :blue
+        for ratio in score_ratios
+]
 barplot!(
     ax, 1:5, score_ratios,
     color = bar_colors,
