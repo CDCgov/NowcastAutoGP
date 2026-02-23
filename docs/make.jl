@@ -5,6 +5,9 @@ using NowcastAutoGP
 pages = [
     "Home" => "index.md",
     "Getting Started" => "vignettes/getting-started.md",
+    "Tutorials" => [
+        "vignettes/use-percentages.md",
+    ],
     "API Reference" => "api.md",
 ]
 

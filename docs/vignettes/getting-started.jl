@@ -381,8 +381,7 @@ fitted_models_by_report_date = map(selected_dates) do report_date
         data_to_revise = fit_on_data(
         report_date;
         n_redact = 1,
-        training_data = training_data,
-        n_particles = 4
+        training_data = training_data
     )
     return (
         model_dict = Dict(model), forecast_dates = forecast_dates,
