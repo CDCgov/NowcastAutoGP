@@ -11,34 +11,6 @@ repos:
     -   id: mixed-line-ending
     -   id: trailing-whitespace
 #####
-# Python
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.11.10
-  hooks:
-    # Sort imports
-    - id: ruff
-      args: ['check', '--select', 'I', '--fix']
-    # Run the linter
-    - id: ruff
-      args: ['--line-length', '79']
-    # Run the formatter
-    - id: ruff-format
-      args: ['--line-length', '79']
-#####
-# R
--   repo: https://github.com/lorenzwalthert/precommit
-    rev: v0.4.3.9009
-    hooks:
-    -   id: lintr
-#####
-# Java
-- repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.14.0
-  hooks:
-  - id: pretty-format-java
-    args: [--aosp,--autofix]
-
-#####
 # Secrets
 -   repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
@@ -46,3 +18,8 @@ repos:
     -   id: detect-secrets
         args: ['--baseline', '.secrets.baseline']
         exclude: package.lock.json
+# NOTE: This is a Julia package. Julia formatting is handled by the separate
+# `runic` CI job (fredrikekre/runic-action). The previous Python (ruff), R
+# (lintr) and Java (pretty-format-java) hooks were removed: there are no such
+# source files in this repo, and the R `lintr` hook in particular bootstrapped
+# an renv library on every cold cache, which dominated pre-commit CI runtime.
