@@ -100,6 +100,10 @@ A tuple `(forward_transform, inverse_transform)` where:
 - **Forward**: `y ↦ BoxCox_λ(y + offset)` where λ is automatically fitted
 - **Inverse**: Custom inverse function handling edge cases for numerical stability
 - **Note**: Automatically determines optimal λ parameter via maximum likelihood
+- **Fallback**: On near-constant data the Box-Cox MLE can return a pathological λ that
+  collapses the transform to a constant (singular GP covariance, issue #51). When the
+  transformed spread degenerates relative to a plain log, this falls back to the
+  `"positive"` (log) transformation and emits a warning.
 
 # Offset Calculation
 An offset is automatically calculated using `_get_offet(values)`:
@@ -146,8 +150,22 @@ function get_transformations(
         return (y -> log(y + offset), y -> max(exp(y) - offset, zero(F)))
     elseif transform_name == "boxcox"
         max_values = maximum(values)
-        bc = fit(BoxCoxTransformation, values .+ offset) # Fit Box-Cox transformation
+        shifted = values .+ offset
+        bc = fit(BoxCoxTransformation, shifted) # Fit Box-Cox transformation
         λ = bc.λ
+        transformed = bc.(shifted)
+        bc_range = maximum(transformed) - minimum(transformed)
+        log_range = maximum(log, shifted) - minimum(log, shifted)
+        # On near-constant data the Box-Cox MLE can pick a pathological λ (e.g.
+        # λ ≈ -178 for large counts), which underflows the transform to a constant
+        # and makes the GP covariance singular (issue #51). When the Box-Cox spread
+        # collapses relative to a plain log, fall back to the well-behaved "positive"
+        # (log) transformation, which fits this data fine.
+        if !all(isfinite, transformed) || bc_range <= 1.0e-2 * log_range
+            @warn "Box-Cox transformation degenerate (λ = $λ, transformed range = \
+$bc_range); falling back to log transformation (issue #51)."
+            return get_transformations("positive", values)
+        end
         @info "Using Box-Cox transformation with λ = $λ and offset = $offset"
         return (y -> bc(y + offset), _inv_boxcox(λ, offset, max_values))
     else

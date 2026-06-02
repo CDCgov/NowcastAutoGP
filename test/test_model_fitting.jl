@@ -78,3 +78,61 @@ end
     model = make_and_fit_model(data; smc_data_proportion = 0.05, minimal_params...)
     @test model isa AutoGP.GPModel
 end
+
+@testsnippet FlatData begin
+    using AutoGP, Dates, Random
+
+    flat_dates = collect(Date(2024, 1, 1):Day(1):Date(2024, 1, 10))
+    # Near-constant counts: the Box-Cox MLE picks a pathological λ here (issue #51).
+    flat_values = [
+        75000.0, 75100.0, 74950.0, 75050.0, 75000.0,
+        74980.0, 75020.0, 75010.0, 74990.0, 75005.0,
+    ]
+    # Exactly constant: degenerate even after any monotonic transform.
+    const_values = fill(75000.0, length(flat_dates))
+    flat_forecast_dates = collect(Date(2024, 1, 11):Day(1):Date(2024, 1, 18))
+    minimal_params = (n_particles = 1, n_mcmc = 5, n_hmc = 3)
+end
+
+@testitem "make_and_fit_model+forecast Box-Cox-degenerate flat data (issue #51)" setup = [FlatData] begin
+    # Regression: this previously threw PosDefException at forecast time.
+    Random.seed!(51)
+    transformation, inv_transformation = get_transformations("boxcox", flat_values)
+    data = create_transformed_data(flat_dates, flat_values; transformation)
+    model = make_and_fit_model(data; smc_data_proportion = 0.5, minimal_params...)
+    @test model isa AutoGP.GPModel
+
+    fc = forecast(model, flat_forecast_dates, 25; inv_transformation = inv_transformation)
+    @test size(fc) == (length(flat_forecast_dates), 25)
+    @test all(isfinite, fc)
+    @test all(fc .>= 0)
+    @test 50_000 < sum(fc) / length(fc) < 100_000  # forecasts stay near ~75,000
+end
+
+@testitem "make_and_fit_model+forecast exactly constant data (issue #51)" setup = [FlatData] begin
+    # Genuinely flat data is rescued by the jitter safety net in make_and_fit_model.
+    Random.seed!(52)
+    transformation, inv_transformation = get_transformations("boxcox", const_values)
+    data = create_transformed_data(flat_dates, const_values; transformation)
+    model = make_and_fit_model(data; smc_data_proportion = 0.5, minimal_params...)
+    @test model isa AutoGP.GPModel
+
+    fc = forecast(model, flat_forecast_dates, 25; inv_transformation = inv_transformation)
+    @test size(fc) == (length(flat_forecast_dates), 25)
+    @test all(isfinite, fc)
+    @test all(fc .>= 0)
+end
+
+@testitem "_stabilize_for_fit leaves healthy data unchanged" setup = [FlatData] begin
+    healthy = [10.0, 15.0, 12.0, 18.0, 22.0, 25.0, 20.0, 16.0, 14.0, 11.0]
+    @test NowcastAutoGP._stabilize_for_fit(healthy) === healthy
+end
+
+@testitem "_stabilize_for_fit jitters near-constant data" setup = [FlatData] begin
+    Random.seed!(1)
+    flat = fill(11.2256, 30)
+    jittered = NowcastAutoGP._stabilize_for_fit(flat)
+    @test jittered != flat
+    rel_range = (maximum(jittered) - minimum(jittered)) / (abs(sum(jittered) / length(jittered)) + 1)
+    @test rel_range >= 1.0e-3
+end
