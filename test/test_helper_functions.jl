@@ -143,6 +143,27 @@ end
     end
 end
 
+@testitem "get_transformations BoxCox Fallback on Flat Data" setup = [DataSnippet] begin
+    # Near-constant data makes the Box-Cox MLE pick a pathological λ that collapses the
+    # transform; get_transformations falls back to log instead (issue #51).
+    flat_values = [
+        75000.0, 75100.0, 74950.0, 75050.0, 75000.0,
+        74980.0, 75020.0, 75010.0, 74990.0, 75005.0,
+    ]
+    forward_transform, inverse_transform = get_transformations("boxcox", flat_values)
+
+    # Fallback ⟹ forward transform is log (offset = 0 for these positive values).
+    @test forward_transform(flat_values[1]) ≈ log(flat_values[1]) rtol = 1.0e-9
+    # Round-trip still holds on the original scale.
+    for val in flat_values
+        @test inverse_transform(forward_transform(val)) ≈ val rtol = 1.0e-9
+    end
+
+    # Healthy, well-spread data should NOT fall back (genuine Box-Cox, not log).
+    healthy_forward, _ = get_transformations("boxcox", values)
+    @test !isapprox(healthy_forward(values[1]), log(values[1]); rtol = 1.0e-9)
+end
+
 @testitem "get_transformations Percentage with data with zeros" setup = [DataSnippet] begin
     forward_transform,
         inverse_transform = get_transformations("percentage", values_with_zero)
