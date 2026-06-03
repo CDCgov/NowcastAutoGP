@@ -93,13 +93,13 @@ as data accrue.
 
 ````julia
 start_date = Date(2022, 1, 1)
-all_dates = collect(start_date:Week(1):(start_date + Week(103)))   # 104 weekly points ≈ 2 years
+all_dates = collect(start_date:Week(1):(start_date + Week(52 * 3)))   # 104 weekly points ≈ 2 years
 n_all = length(all_dates)
 tt = 0:(n_all - 1)
-truth = 50.0 .+ 20.0 .* sin.(2π .* tt ./ 52) .+ 0.08 .* tt          # annual cycle (52 weeks) + trend
+truth = 50.0 .+ 20.0 .* sin.(2π .* tt ./ 52) .+ 0.2 .* tt          # annual cycle (52 weeks) + trend
 observations = truth .+ 2.0 .* randn(n_all)
 
-report_weeks = [26, 39, 52]
+report_weeks = 52 .+ [0, 26, 39]
 horizon = 52                                                        # forecast one year ahead
 report_colours = [:steelblue, :darkorange, :seagreen]
 
@@ -126,15 +126,15 @@ tighten `σ` to concentrate mass around the annual cycle. For a 39-week window, 
 
 ````julia
 example_window = 39
-seasonal_example = @set GPConfig().prior[:period][:mu] = log(52 / example_window)
-seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.3
+seasonal_example = @set GPConfig().prior[:period][:mu] = -log(3.0)
+seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.1
 seasonal_example.prior[:period]
 ````
 
 ````
 Dict{Symbol, Float64} with 2 entries:
-  :mu => 0.287682
-  :sigma => 0.3
+  :mu => -1.09861
+  :sigma => 0.1
 ````
 
 `@set` returns a fresh `GPConfig`; every sibling prior is carried over unchanged — it only touched
@@ -169,8 +169,9 @@ results = map(report_weeks) do w
     horizon_truth = truth[(w + 1):(w + horizon)]
 
     # a seasonal prior for *this* window — an annual cycle is log(52/w) in normalised time
-    seasonal_config = @set GPConfig().prior[:period][:mu] = log(52 / w)
-    seasonal_config = @set seasonal_config.prior[:period][:sigma] = 0.3
+    window_length = Dates.value(all_dates[w] - all_dates[1])
+    seasonal_config = @set GPConfig().prior[:period][:mu] = log(365 / window_length)
+    seasonal_config = @set seasonal_config.prior[:period][:sigma] = 0.2
 
     default_model = make_and_fit_model(train_data; config = GPConfig(), fit_params...)
     seasonal_model = make_and_fit_model(train_data; config = seasonal_config, fit_params...)
@@ -277,9 +278,9 @@ end
 
 ````
 3-element Vector{@NamedTuple{report_week::Int64, default::Float64, seasonal::Float64}}:
- (report_week = 26, default = 8.145047072851177, seasonal = 9.299402943763948)
- (report_week = 39, default = 7.139662993075851, seasonal = 4.4957906600468425)
- (report_week = 52, default = 5.006893616792975, seasonal = 3.268268898264733)
+ (report_week = 52, default = 5.8769579095053945, seasonal = 8.818111041709123)
+ (report_week = 78, default = 11.780098525126478, seasonal = 8.530316456971692)
+ (report_week = 91, default = 0.6746733104098456, seasonal = 0.8066853953563354)
 ````
 
 The seasonal prior is clearly better once enough of the cycle is in view — a much lower CRPS at weeks
@@ -325,7 +326,7 @@ overall_crps = (;
 ````
 
 ````
-(default = 6.7638678942400015, seasonal = 5.687820834025175)
+(default = 6.110576581680572, seasonal = 6.051704298012383)
 ````
 
 ## Enabling `SquaredExponential` structure

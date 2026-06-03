@@ -1,3 +1,8 @@
+using Pkg
+Pkg.activate(joinpath(@__DIR__, ".."))
+Pkg.instantiate()
+
+
 using Markdown
 md"""
 # Setting GP priors with `Accessors.jl`
@@ -32,7 +37,7 @@ using Accessors
 using CairoMakie
 using Dates, Distributions, Random
 
-Random.seed!(2026)
+Random.seed!(1234)
 CairoMakie.activate!(type = "png")
 nothing #hide
 
@@ -65,7 +70,7 @@ exp(default_config.prior[:period][:mu]) # ≈ 0.22 of the window
 md"""
 ## A seasonal series and a few report dates
 
-We simulate two years of weekly observations with a clear annual cycle, a gentle upward trend and
+We simulate three years of weekly observations with a clear annual cycle, a gentle upward trend and
 observation noise. We then imagine sitting at three **report dates** — weeks 26, 39 and 52 (a half,
 three-quarters and a full cycle of history) — and at each one forecast a full year ahead. This
 mirrors the [Getting started](getting-started.md) workflow of scoring forecasts across report dates
@@ -73,22 +78,35 @@ as data accrue.
 """
 
 start_date = Date(2022, 1, 1)
-all_dates = collect(start_date:Week(1):(start_date + Week(103)))   # 104 weekly points ≈ 2 years
+all_dates = collect(start_date:Week(1):(start_date + Week(52 * 3)))   # 156 weekly points ≈ 3 years
 n_all = length(all_dates)
 tt = 0:(n_all - 1)
-truth = 50.0 .+ 20.0 .* sin.(2π .* tt ./ 52) .+ 0.08 .* tt          # annual cycle (52 weeks) + trend
-observations = truth .+ 2.0 .* randn(n_all)
+log_truth = log(50.0) .+ 1.0 .* sin.(2π .* tt ./ 52) .+ 0.02 .* tt         # annual cycle (52 weeks) + trend
+truth = exp.(log_truth)
+observations = exp.(log_truth .+ 0.15 .* randn(n_all))
 
-report_weeks = [26, 39, 52]
+
+report_weeks = 51 .+ [0, 26, 52]
 horizon = 52                                                        # forecast one year ahead
 report_colours = [:steelblue, :darkorange, :seagreen]
-nothing #hide
 
 fig_data = let
     fig = Figure(size = (820, 400))
-    ax = Axis(fig[1, 1]; xlabel = "week", ylabel = "value", title = "Synthetic weekly series")
-    lines!(ax, Dates.value.(all_dates), truth; color = :black, label = "signal")
-    scatter!(ax, Dates.value.(all_dates), observations; color = (:black, 0.3), markersize = 5)
+    ax = Axis(
+        fig[1, 1];
+        xlabel = "week",
+        ylabel = "value",
+        title = "Synthetic weekly series",
+    )
+    lines!(
+        ax, Dates.value.(all_dates), truth;
+        color = (:black, 0.5), label = "expected",
+        linestyle = :dash, linewidth = 2
+    )
+    scatter!(
+        ax, Dates.value.(all_dates), observations;
+        color = (:black, 0.8), markersize = 5, label = "observed"
+    )
     vlines!(
         ax, Dates.value.(all_dates[report_weeks]);
         color = report_colours, linestyle = :dash, linewidth = 2
@@ -106,8 +124,8 @@ tighten `σ` to concentrate mass around the annual cycle. For a 39-week window, 
 """
 
 example_window = 39
-seasonal_example = @set GPConfig().prior[:period][:mu] = log(52 / example_window)
-seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.3
+seasonal_example = @set GPConfig().prior[:period][:mu] = -log(3.0)
+seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.1
 seasonal_example.prior[:period]
 
 md"""
@@ -127,28 +145,66 @@ fitted model is a particle ensemble, so each forecast is a full predictive *dist
 what CRPS scores below.
 """
 
-fit_params = (n_particles = 16, smc_data_proportion = 0.1, n_mcmc = 75, n_hmc = 15)
+fit_params = (n_particles = 16, smc_data_proportion = 0.05, n_mcmc = 200, n_hmc = 25)
 n_draws = 300
 
 Random.seed!(2026)
 results = map(report_weeks) do w
-    train_data = create_transformed_data(
-        all_dates[1:w], observations[1:w]; transformation = identity
-    )
     horizon_dates = all_dates[(w + 1):(w + horizon)]
-    horizon_truth = truth[(w + 1):(w + horizon)]
+    horizon_truth = observations[(w + 1):(w + horizon)]
+
+    transformation, inv_transformation = get_transformations("positive", observations[1:w])
+    train_data = create_transformed_data(
+        all_dates[1:w], observations[1:w]; transformation
+    )
 
     ## a seasonal prior for *this* window — an annual cycle is log(52/w) in normalised time
-    seasonal_config = @set GPConfig().prior[:period][:mu] = log(52 / w)
+    window_length = Dates.value(all_dates[w] - all_dates[1])
+    seasonal_config = @set GPConfig().prior[:period][:mu] = log(365 / window_length)
     seasonal_config = @set seasonal_config.prior[:period][:sigma] = 0.3
+    seasonal_config_lin_period_prior = @set seasonal_config.node_dist_leaf = [0.0, 0.5, 0., 0., 0.5]
+    default_config_lin_period_prior = @set GPConfig().node_dist_leaf = [0.0, 0.5, 0., 0., 0.5] 
 
-    default_model = make_and_fit_model(train_data; config = GPConfig(), fit_params...)
-    seasonal_model = make_and_fit_model(train_data; config = seasonal_config, fit_params...)
+    n_particles = Threads.nthreads() # use all available threads for SMC sampling
+    default_model = make_and_fit_model(
+        train_data;
+        n_particles, config = GPConfig(), fit_params...
+    )
+    seasonal_model = make_and_fit_model(
+        train_data;
+        n_particles, config = seasonal_config, fit_params...
+    )
+    seasonal_config_lin_period_model = make_and_fit_model(
+        train_data;
+        n_particles, config = seasonal_config_lin_period_prior, fit_params...
+    )
+    default_config_lin_period_model = make_and_fit_model(
+        train_data;
+        n_particles, config = default_config_lin_period_prior, fit_params...
+    )
 
     return (;
         report_week = w, horizon_dates, horizon_truth,
-        default = forecast(default_model, horizon_dates, n_draws),
-        seasonal = forecast(seasonal_model, horizon_dates, n_draws),
+        default = forecast(
+            default_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        seasonal = forecast(
+            seasonal_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        seasonal_config_lin_period = forecast(
+            seasonal_config_lin_period_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        default_config_lin_period = forecast(
+            default_config_lin_period_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        default_model = default_model,
+        seasonal_model = seasonal_model,
+        seasonal_config_lin_period_model = seasonal_config_lin_period_model,
+        default_config_lin_period_model = default_config_lin_period_model,
     )
 end
 nothing #hide
@@ -164,13 +220,15 @@ fig_forecasts = let
     fig = Figure(size = (920, 720))
     panels = (
         (key = :default, row = 1, title = "Default prior"),
-        (key = :seasonal, row = 2, title = "Seasonal prior (re-centred with @set)"),
+        (key = :default_config_lin_period, row = 2, title = "Default prior with linear/periodic GP structure"),
+        (key = :seasonal, row = 3, title = "Seasonal prior"),
+        (key = :seasonal_config_lin_period, row = 4, title = "Seasonal prior with linear/periodic GP structure"),
     )
     for panel in panels
         ax = Axis(fig[panel.row, 1]; xlabel = "week", ylabel = "value", title = panel.title)
-        lines!(
-            ax, Dates.value.(all_dates), truth;
-            color = :black, linestyle = :dash, label = "truth"
+        scatter!(
+            ax, Dates.value.(all_dates), observations;
+            color = :black, label = "observations"
         )
         for (res, colour) in zip(results, report_colours)
             fc = getproperty(res, panel.key)
@@ -296,3 +354,12 @@ the kernel distribution together.
   52. Like any prior it is an assumption: from only half a cycle it can overshoot, so score it (with
   CRPS, averaged over the forecasts) rather than assuming it always helps.
 """
+
+import NowcastAutoGP.AutoGP as AGP
+
+weights = AGP.particle_weights(results[end].default_model)
+kernels = AGP.covariance_kernels(results[end].default_model)
+for (i, (k, w)) in enumerate(zip(kernels, weights))
+    println("Model $(i), Weight $(w)")
+    Base.display(k)
+end
