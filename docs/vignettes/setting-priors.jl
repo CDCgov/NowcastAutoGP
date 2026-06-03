@@ -70,11 +70,11 @@ exp(default_config.prior[:period][:mu]) # ≈ 0.22 of the window
 md"""
 ## A seasonal series and a few report dates
 
-We simulate three years of weekly observations with a clear annual cycle, a gentle upward trend and
-observation noise. We then imagine sitting at three **report dates** — weeks 26, 39 and 52 (a half,
-three-quarters and a full cycle of history) — and at each one forecast a full year ahead. This
-mirrors the [Getting started](getting-started.md) workflow of scoring forecasts across report dates
-as data accrue.
+We simulate three years of weekly observations on a **log scale** — a clear annual cycle and a gentle
+upward trend, with multiplicative (log-normal) observation noise. We then imagine sitting at three
+**report dates** — at roughly one, one-and-a-half and two years of history — and at each one forecast a
+full year ahead. This mirrors the [Getting started](getting-started.md) workflow of scoring forecasts
+across report dates as data accrue.
 """
 
 start_date = Date(2022, 1, 1)
@@ -118,12 +118,13 @@ end
 md"""
 ## Re-centring the period prior with `@set`
 
-A one-year cycle is 52 weeks. In a window of `w` weeks that is a period of `52 / w` in AutoGP's
-normalised time, so we re-centre the period prior's median there by setting `μ = log(52 / w)`, and
-tighten `σ` to concentrate mass around the annual cycle. For a 39-week window, for example:
+AutoGP works in *normalised* time: it rescales the training window to `[0, 1]`, so a `Periodic`
+kernel's period is expressed as a **fraction of the window**, and `prior[:period]` is a
+`LogNormal(μ, σ)` over that fraction (its median is `exp(μ)`). Re-centring the prior is then just a
+matter of `@set`-ting a new `μ` — here, a median period of a third of the window, held tightly with a
+small `σ`:
 """
 
-example_window = 39
 seasonal_example = @set GPConfig().prior[:period][:mu] = -log(3.0)
 seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.1
 seasonal_example.prior[:period]
@@ -145,8 +146,14 @@ fitted model is a particle ensemble, so each forecast is a full predictive *dist
 what CRPS scores below.
 """
 
-fit_params = (n_particles = 16, smc_data_proportion = 0.05, n_mcmc = 200, n_hmc = 25)
-n_draws = 300
+n_particles = 32
+fit_params = (
+    smc_data_proportion = 0.005,
+    n_mcmc = 200,
+    n_hmc = 25,
+    adaptive_rejuvenation = true,
+)
+n_draws = 1000
 
 Random.seed!(2026)
 results = map(report_weeks) do w
@@ -158,14 +165,14 @@ results = map(report_weeks) do w
         all_dates[1:w], observations[1:w]; transformation
     )
 
-    ## a seasonal prior for *this* window — an annual cycle is log(52/w) in normalised time
+    ## a seasonal prior for *this* window: an annual cycle is 365 days and the window spans
+    ## `window_length` days, so in normalised units the period is 365/window_length → μ = log(365/window_length)
     window_length = Dates.value(all_dates[w] - all_dates[1])
     seasonal_config = @set GPConfig().prior[:period][:mu] = log(365 / window_length)
     seasonal_config = @set seasonal_config.prior[:period][:sigma] = 0.3
-    seasonal_config_lin_period_prior = @set seasonal_config.node_dist_leaf = [0.0, 0.5, 0., 0., 0.5]
-    default_config_lin_period_prior = @set GPConfig().node_dist_leaf = [0.0, 0.5, 0., 0., 0.5] 
+    seasonal_config_lin_period_prior = @set seasonal_config.node_dist_leaf = [0.0, 0.5, 0.0, 0.0, 0.5]
+    default_config_lin_period_prior = @set GPConfig().node_dist_leaf = [0.0, 0.5, 0.0, 0.0, 0.5]
 
-    n_particles = Threads.nthreads() # use all available threads for SMC sampling
     default_model = make_and_fit_model(
         train_data;
         n_particles, config = GPConfig(), fit_params...
@@ -210,10 +217,9 @@ end
 nothing #hide
 
 md"""
-The default prior (top) tends to extrapolate short cycles or flat trends, while the seasonal prior
-(bottom) carries the annual cycle forward. Once three-quarters of a cycle is in view (weeks 39 and 52)
-it stays close to the truth (dashed); from only half a cycle (week 26) the annual assumption is a
-large extrapolation and overshoots:
+We forecast a year ahead from each report date under all four priors (one row each). The strong
+seasonal prior (rows 3–4) is what carries the annual cycle forward and stays close to the data;
+restricting the leaf kernels to Linear + Periodic (rows 2 and 4) makes little difference on its own:
 """
 
 fig_forecasts = let
@@ -256,8 +262,6 @@ estimator:
 \text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]
 ```
 
-The score is then **averaged over the forecasts** — every week of each report date's one-year-ahead
-horizon — which is how a probabilistic forecast is evaluated (no repeated simulations required):
 """
 
 ## Hand-rolled CRPS estimator (reproduced from the Getting started vignette).
@@ -282,49 +286,65 @@ crps_by_date = map(results) do res
     (;
         report_week = res.report_week,
         default = mean_crps(res.horizon_truth, res.default),
+        default_lin_period = mean_crps(res.horizon_truth, res.default_config_lin_period),
         seasonal = mean_crps(res.horizon_truth, res.seasonal),
+        seasonal_lin_period = mean_crps(res.horizon_truth, res.seasonal_config_lin_period),
     )
 end
 
 md"""
-The seasonal prior is clearly better once enough of the cycle is in view — a much lower CRPS at weeks
-39 and 52. At week 26, with only half a cycle observed, the annual assumption overshoots and scores a
-little worse: a useful reminder that a prior is an assumption, most valuable when the data can support
-it:
+Scoring confirms the visual read. The strong seasonal prior gives a markedly lower CRPS, while
+restricting the leaf kernels to Linear + Periodic barely moves the score — on its own it is not
+particularly beneficial. It is the period *hyperparameter* prior, not the kernel menu, doing the work:
 """
 
 fig_scores = let
+    ## one dodged bar per approach, grouped by report date
+    approaches = [
+        (key = :default, label = "default", colour = :tomato),
+        (key = :default_lin_period, label = "default, lin+periodic leaves", colour = :goldenrod),
+        (key = :seasonal, label = "seasonal", colour = :steelblue),
+        (key = :seasonal_lin_period, label = "seasonal, lin+periodic leaves", colour = :seagreen),
+    ]
     n = length(crps_by_date)
-    defaults = [row.default for row in crps_by_date]
-    seasonals = [row.seasonal for row in crps_by_date]
 
-    fig = Figure(size = (640, 400))
+    xs = Int[]
+    heights = Float64[]
+    dodge = Int[]
+    colours = Symbol[]
+    for (j, approach) in enumerate(approaches), (i, row) in enumerate(crps_by_date)
+        push!(xs, i)
+        push!(heights, getproperty(row, approach.key))
+        push!(dodge, j)
+        push!(colours, approach.colour)
+    end
+
+    fig = Figure(size = (820, 430))
     ax = Axis(
         fig[1, 1];
         xticks = (1:n, ["week $(row.report_week)" for row in crps_by_date]),
         ylabel = "mean CRPS (lower is better)",
-        title = "Forecast skill by report date"
+        title = "Forecast skill by report date and prior"
     )
-    barplot!(
-        ax, repeat(1:n, 2), vcat(defaults, seasonals);
-        dodge = vcat(fill(1, n), fill(2, n)),
-        color = vcat(fill(:tomato, n), fill(:steelblue, n))
-    )
+    barplot!(ax, xs, heights; dodge = dodge, color = colours)
     Legend(
         fig[1, 2],
-        [PolyElement(color = :tomato), PolyElement(color = :steelblue)],
-        ["default", "seasonal"]
+        [PolyElement(color = a.colour) for a in approaches],
+        [a.label for a in approaches]
     )
     fig
 end
 
 md"""
-Averaged over the three report dates the seasonal prior still comes out ahead overall:
+Averaged over the report dates the strong seasonal prior is the clear winner; the leaf-kernel
+restriction barely changes the score, with or without it:
 """
 
 overall_crps = (;
     default = mean(row.default for row in crps_by_date),
+    default_lin_period = mean(row.default_lin_period for row in crps_by_date),
     seasonal = mean(row.seasonal for row in crps_by_date),
+    seasonal_lin_period = mean(row.seasonal_lin_period for row in crps_by_date),
 )
 
 md"""
@@ -349,17 +369,42 @@ the kernel distribution together.
   AutoGP prior is available without re-declaring it in `NowcastAutoGP`.
 - `Accessors.@set` is a clean way to change one prior entry while preserving the rest, including deep
   edits into the nested `prior` `Dict`.
-- Re-centring `prior[:period]` on the seasonality you expect improves forecasts once enough of the
-  cycle is in view — here, a lower mean CRPS over the report dates, with clear gains by weeks 39 and
-  52. Like any prior it is an assumption: from only half a cycle it can overshoot, so score it (with
-  CRPS, averaged over the forecasts) rather than assuming it always helps.
+- Re-centring the period *hyperparameter* prior (`prior[:period]`) on the seasonality you expect can
+  substantially improve forecasts — here the strong seasonal prior gives the lowest mean CRPS across
+  the report dates.
+- Editing the *structural* prior (`node_dist_leaf`) to allow only Linear + Periodic leaves made little
+  difference on its own: the period prior, not the kernel menu, drove the gains. As always, score
+  competing priors with CRPS (averaged over the forecasts) rather than assuming an edit will help.
+"""
+
+md"""
+## Appendix: the discovered kernel structures
+
+Each fitted model is a *weighted ensemble* of SMC particles, and every particle is a complete GP with
+its own covariance-kernel structure. AutoGP exposes them directly: `particle_weights` gives each
+particle's posterior weight and `covariance_kernels` its discovered kernel. Reading these out shows
+which structures the search actually settled on under a given prior — a concrete look at what the prior
+did. Here is the ensemble from the default-prior fit at the final report date, ordered by weight:
 """
 
 import NowcastAutoGP.AutoGP as AGP
 
-weights = AGP.particle_weights(results[end].default_model)
-kernels = AGP.covariance_kernels(results[end].default_model)
-for (i, (k, w)) in enumerate(zip(kernels, weights))
-    println("Model $(i), Weight $(w)")
-    Base.display(k)
+function show_discovered_kernels(model)
+    weights = AGP.particle_weights(model)
+    kernels = AGP.covariance_kernels(model)
+    ## list particles from highest to lowest posterior weight
+    for i in sortperm(weights; rev = true)
+        println("posterior weight = ", round(weights[i]; digits = 3))
+        display(kernels[i])
+    end
+    return nothing
 end
+
+show_discovered_kernels(results[end].default_model)
+
+md"""
+Running the same readout on the strong-seasonal-prior fit lets us compare how re-centring the period
+prior reshaped the structures the search selected:
+"""
+
+show_discovered_kernels(results[end].seasonal_model)
