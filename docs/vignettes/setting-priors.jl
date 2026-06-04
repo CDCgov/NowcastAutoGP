@@ -55,7 +55,7 @@ default_config = GPConfig()
 default_config.node_dist_leaf
 
 md"""
-So by default, the `SquaredExponential` primitive (index 3) has **zero** prior mass, and is treated as superceded by
+So by default, the `SquaredExponential` primitive (index 3) has **zero** prior mass, and is treated as superseded by
 the `GammaExponential` (index 4), which recovers it as a special case when the `gamma` lengthscale exponent is exactly 2.
 The `Linear` (index 2) and `Periodic` (index 5) primitives have equal prior mass with the `GammaExponential` (index 4),
 and the `Constant` (index 1) has zero mass.
@@ -85,7 +85,7 @@ We will show how to build a strong seasonal prior into the model in two ways:
 1. Re-centring the period prior on an annual cycle for that window.
 2. Restricting the leaf-kernel distribution to only allow Linear + Periodic kernels.
 
-To demonstate, we simulate three years of synthetic weekly observations using a simple log-linear model
+To demonstrate, we simulate three years of synthetic weekly observations using a simple log-linear model
 with annual sinusoidal variation around a linear trend with multiplicative noise.
 """
 
@@ -152,7 +152,7 @@ md"""
 seasonal_example.prior[:gamma] == GPConfig().prior[:gamma]
 
 md"""
-#### Alterating the leaf-kernel distribution
+#### Altering the leaf-kernel distribution
 
 The leaf-kernel distribution is a simple probability vector over the primitive kernels.
 We can use `@set` to change it, for example to specialise on only Linear + Periodic kernels (indices 2 and 5):
@@ -290,7 +290,7 @@ end
 md"""
 We see that incorporating our prior knowledge of seasonality substantially improves forecasts.
 However, this improvement is not uniform; at the first report date, when only one year of data is available, there is insufficient information to learn the secular trend underneath the seasonal variation.
-By one and a half years, the change in compared to the previous season is clearer, and the strong seasonal prior allows the model to extrapolate that pattern forward.
+By one and a half years, the change compared to the previous season is clearer, and the strong seasonal prior allows the model to extrapolate that pattern forward.
 This is especially pronounced when we restrict the leaf-kernel distribution to only allow `Linear` + `Periodic` primitives.
 Later on, the model has locked onto a combination of kernels that captures the trend and seasonality, so the restriction to `Linear` + `Periodic` leaves makes less difference.
 

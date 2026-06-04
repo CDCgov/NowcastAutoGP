@@ -1,7 +1,7 @@
 using Literate
 vignettes_to_make = [
-    # "getting-started.jl",
-    # "use-percentages.jl",
+    "getting-started.jl",
+    "use-percentages.jl",
     "setting-priors.jl",
 ]
 
