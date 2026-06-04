@@ -14,7 +14,7 @@ This is a secondary safety net for data that is flat even after transformation. 
 common case of a pathological Box-Cox λ on otherwise-fittable data is handled earlier,
 in [`get_transformations`](@ref), by falling back to a log transformation.
 """
-function _stabilize_for_fit(y::AbstractVector{<:Real}; flat_threshold)
+function _stabilize_for_fit(y::AbstractVector{<:Real}; flat_threshold = 1.0e-3)
     n = length(y)
     n > 1 || return y
     scale = abs(sum(y) / n) + 1
@@ -76,7 +76,7 @@ for these copy-and-update edits if you have it in your environment
 (`config = @set GPConfig().prior[:period][:mu] = log(1.0)`); it is not a dependency of this package.
 """
 function make_and_fit_model(
-        data::TData; n_particles, smc_data_proportion,
+        data::TData; n_particles = 1, smc_data_proportion = 0.1,
         flat_threshold = 1.0e-3, config = AutoGP.GP.GPConfig(), kwargs...
     )
     n_train = length(data.y)
