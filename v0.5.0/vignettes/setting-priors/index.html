@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Setting GP priors with Accessors.jl · NowcastAutoGP.jl</title><meta name="title" content="Setting GP priors with Accessors.jl · NowcastAutoGP.jl"/><meta property="og:title" content="Setting GP priors with Accessors.jl · NowcastAutoGP.jl"/><meta property="twitter:title" content="Setting GP priors with Accessors.jl · NowcastAutoGP.jl"/><meta name="description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:description" content="Documentation for NowcastAutoGP.jl."/><meta property="twitter:description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/setting-priors/"/><meta property="twitter:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/setting-priors/"/><link rel="canonical" href="https://cdcgov.github.io/NowcastAutoGP/vignettes/setting-priors/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/material-theme.css" rel="stylesheet" type="text/css"/><script src="../../assets/material-theme.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">NowcastAutoGP.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../getting-started/">Getting Started</a></li><li><span class="tocitem">Tutorials</span><ul><li><a class="tocitem" href="../use-percentages/">Forecasting percentage data with <code>NowcastAutoGP</code></a></li><li class="is-active"><a class="tocitem" href>Setting GP priors with <code>Accessors.jl</code></a><ul class="internal"><li><a class="tocitem" href="#Loading-dependencies"><span>Loading dependencies</span></a></li><li><a class="tocitem" href="#Inspecting-the-default-priors"><span>Inspecting the default priors</span></a></li><li><a class="tocitem" href="#Example:-A-seasonal-series-and-a-few-report-dates"><span>Example: A seasonal series and a few report dates</span></a></li><li><a class="tocitem" href="#Summary"><span>Summary</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../../api/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Setting GP priors with <code>Accessors.jl</code></a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Setting GP priors with <code>Accessors.jl</code></a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP/blob/main/docs/src/vignettes/setting-priors.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Markdown</code></pre><h1 id="Setting-GP-priors-with-Accessors.jl"><a class="docs-heading-anchor" href="#Setting-GP-priors-with-Accessors.jl">Setting GP priors with <code>Accessors.jl</code></a><a id="Setting-GP-priors-with-Accessors.jl-1"></a><a class="docs-heading-anchor-permalink" href="#Setting-GP-priors-with-Accessors.jl" title="Permalink"></a></h1><p><em>Customising the AutoGP prior for epidemiological seasonality</em></p><p><strong>CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)</strong></p><p><code>make_and_fit_model</code> accepts a configuration object of type <code>AutoGP.GP.GPConfig</code> using the <code>config</code> keyword. The configuration object describes priors over the Gaussian Process&#39;s kernel structure and hyperparameters. In this vignette we show how to edit the default <code>GPConfig()</code> to give a strong prior when we expect a certain seasonal cycle, and how that improves forecasts.</p><p>In this vignette we are interested in two different priors. First, the underlying <code>AutoGP</code> kernel structure can be represented as a tree with primitive kernels at the leaves, and the internal nodes describing the combinations <code>Plus</code>, <code>Times</code> and <code>ChangePoint</code>, c.f. <a href="https://probsys.github.io/AutoGP.jl/stable/api.html">AutoGP.jl documentation</a>. We can use the configuration to set the prior probability for each of the primitive kernels to be a leaf in the structure. Second, we can set three hyperparameter priors for the <code>gamma</code> lengthscale exponent for <code>GammaExponential</code> primitive, <code>period</code> period for <code>Periodic</code> primitive and <code>wildcard</code> for all other hyperparameters.</p><p>We will show how to edit the period prior, and likelihood of <code>Periodic</code> primitive kernels in the tree kernel structure, to give a a strong seasonal prior, and how that improves forecasts. We score forecasts following the scoring approach of the <a href="../getting-started/">Getting started</a> vignette.</p><p><code>GPConfig</code> is an immutable struct which makes &quot;change just this one field&quot; awkward to write by hand. <a href="https://github.com/JuliaObjects/Accessors.jl"><code>Accessors.jl</code></a>&#39;s <code>@set</code> macro does exactly that: it returns a <em>copy</em> with the chosen field(s) changed and all the others preserved.</p><blockquote><p><code>Accessors.jl</code> is a convenience used here in the docs; it is <strong>not</strong> a dependency of <code>NowcastAutoGP</code> itself. The same edits can be made by constructing a <code>GPConfig</code> directly.</p></blockquote><h2 id="Loading-dependencies"><a class="docs-heading-anchor" href="#Loading-dependencies">Loading dependencies</a><a id="Loading-dependencies-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-dependencies" title="Permalink"></a></h2><pre><code class="language-julia hljs">import NowcastAutoGP.AutoGP as AGP
+using NowcastAutoGP
+using Accessors
+using CairoMakie
+using Dates, Distributions, Random
+
+Random.seed!(1234)
+CairoMakie.activate!(type = &quot;png&quot;)</code></pre><pre><code class="nohighlight hljs">Precompiling packages...
+   1501.6 ms  ✓ StatsBase
+    684.1 ms  ✓ PDMats → StatsBaseExt
+   1898.5 ms  ✓ BoxCox
+   2650.7 ms  ✓ Distributions
+    987.2 ms  ✓ Distributions → DistributionsTestExt
+   1376.8 ms  ✓ Distributions → DistributionsChainRulesCoreExt
+  10716.0 ms  ✓ AutoGP
+   3231.0 ms  ✓ NowcastAutoGP
+  8 dependencies successfully precompiled in 19 seconds. 134 already precompiled.
+Precompiling packages...
+    827.8 ms  ✓ StructArrays
+    875.8 ms  ✓ KernelDensity
+    688.1 ms  ✓ StructArrays → StructArraysAdaptExt
+    814.3 ms  ✓ StructArrays → StructArraysSparseArraysExt
+    796.5 ms  ✓ StructArrays → StructArraysStaticArraysExt
+    252.2 ms  ✓ StructArrays → StructArraysLinearAlgebraExt
+   2742.5 ms  ✓ MathTeXEngine
+  11083.1 ms  ✓ TiffImages
+  72556.2 ms  ✓ Makie
+  25854.3 ms  ✓ CairoMakie
+  10 dependencies successfully precompiled in 110 seconds. 259 already precompiled.
+Precompiling packages...
+    599.0 ms  ✓ Accessors → StructArraysExt
+  1 dependency successfully precompiled in 1 seconds. 20 already precompiled.
+Precompiling packages...
+   9142.4 ms  ✓ BoxCox → BoxCoxMakieExt
+  1 dependency successfully precompiled in 10 seconds. 266 already precompiled.
+</code></pre><h2 id="Inspecting-the-default-priors"><a class="docs-heading-anchor" href="#Inspecting-the-default-priors">Inspecting the default priors</a><a id="Inspecting-the-default-priors-1"></a><a class="docs-heading-anchor-permalink" href="#Inspecting-the-default-priors" title="Permalink"></a></h2><p><code>GPConfig()</code> exposes the prior as plain fields. The leaf-kernel distribution is a probability vector over the primitive kernels, indexed <code>Constant=1</code>, <code>Linear=2</code>, <code>SquaredExponential=3</code>, <code>GammaExponential=4</code>, <code>Periodic=5</code>:</p><pre><code class="language-julia hljs">default_config = GPConfig()
+default_config.node_dist_leaf</code></pre><pre><code class="nohighlight hljs">5-element Vector{Float64}:
+ 0.0
+ 0.3333333333333333
+ 0.0
+ 0.3333333333333333
+ 0.3333333333333333</code></pre><p>So by default, the <code>SquaredExponential</code> primitive (index 3) has <strong>zero</strong> prior mass, and is treated as superceded by the <code>GammaExponential</code> (index 4), which recovers it as a special case when the <code>gamma</code> lengthscale exponent is exactly 2. The <code>Linear</code> (index 2) and <code>Periodic</code> (index 5) primitives have equal prior mass with the <code>GammaExponential</code> (index 4), and the <code>Constant</code> (index 1) has zero mass. Therefore, the default prior is agnostic between <code>Linear</code>, <code>GammaExponential</code> and <code>Periodic</code> primitives.</p><p>The hyperparameter priors live in a nested <code>Dict</code>; the period prior is a <code>LogNormal(μ, σ)</code> over the periodic component&#39;s period:</p><pre><code class="language-julia hljs">default_config.prior[:period]</code></pre><pre><code class="nohighlight hljs">Dict{Symbol, Float64} with 2 entries:
+  :mu =&gt; -1.5
+  :sigma =&gt; 1.0</code></pre><p>AutoGP rescales the input time axis to <code>[0, 1]</code> internally, so this period is in <em>normalised</em> units as a fraction of the training window. The default median period is therefore only about a fifth of the window:</p><pre><code class="language-julia hljs">exp(default_config.prior[:period][:mu]) # ≈ 0.22 of the window</code></pre><pre><code class="nohighlight hljs">0.22313016014842982</code></pre><h2 id="Example:-A-seasonal-series-and-a-few-report-dates"><a class="docs-heading-anchor" href="#Example:-A-seasonal-series-and-a-few-report-dates">Example: A seasonal series and a few report dates</a><a id="Example:-A-seasonal-series-and-a-few-report-dates-1"></a><a class="docs-heading-anchor-permalink" href="#Example:-A-seasonal-series-and-a-few-report-dates" title="Permalink"></a></h2><p>In this example, we imagine having a new data stream for a pathogen, which <em>a priori</em> we know has a strong annual cycle. We will make year long forecasts from three different report dates as data accrue: at one, one-and-a-half and two years of history. We will show how to build a strong seasonal prior into the model in two ways:</p><ol><li>Re-centring the period prior on an annual cycle for that window.</li><li>Restricting the leaf-kernel distribution to only allow Linear + Periodic kernels.</li></ol><p>To demonstate, we simulate three years of synthetic weekly observations using a simple log-linear model with annual sinusoidal variation around a linear trend with multiplicative noise.</p><pre><code class="language-julia hljs">start_date = Date(2022, 1, 1)
+all_dates = collect(start_date:Week(1):(start_date + Week(52 * 3)))
+n_all = length(all_dates)
+tt = 0:(n_all - 1)
+log_truth = log(50.0) .+ 1.0 .* sin.(2π .* tt ./ 52) .+ 0.02 .* tt
+truth = exp.(log_truth)
+observations = exp.(log_truth .+ 0.15 .* randn(n_all))
+
+# The report dates are at weeks 51, 77 and 103 (1 year, 1.5 years and 2 years in).
+report_weeks = 51 .+ [0, 26, 52]
+horizon = 52                                                        # forecast one year ahead
+report_colours = [:steelblue, :darkorange, :seagreen]
+
+fig_data = let
+    fig = Figure(size = (820, 400))
+    ax = Axis(
+        fig[1, 1];
+        xlabel = &quot;week&quot;,
+        ylabel = &quot;value&quot;,
+        title = &quot;Synthetic weekly series&quot;,
+    )
+    tvals = Dates.value.(all_dates .- first(all_dates)) / 7
+    lines!(
+        ax, tvals, truth;
+        color = (:black, 0.5), label = &quot;expected&quot;,
+        linestyle = :dash, linewidth = 2
+    )
+    scatter!(
+        ax, tvals, observations;
+        color = (:black, 0.8), markersize = 5, label = &quot;observed&quot;
+    )
+    vlines!(
+        ax, Dates.value.(all_dates[report_weeks]  .- first(all_dates)) ./ 7;
+        color = report_colours, linestyle = :dash, linewidth = 2
+    )
+    axislegend(ax; position = :lt)
+    fig
+end</code></pre><p><img src="../setting-priors-11.png" alt/></p><h3 id="Choosing-priors"><a class="docs-heading-anchor" href="#Choosing-priors">Choosing priors</a><a id="Choosing-priors-1"></a><a class="docs-heading-anchor-permalink" href="#Choosing-priors" title="Permalink"></a></h3><h4 id="Re-centring-the-period-prior-with-@set"><a class="docs-heading-anchor" href="#Re-centring-the-period-prior-with-@set">Re-centring the period prior with <code>@set</code></a><a id="Re-centring-the-period-prior-with-@set-1"></a><a class="docs-heading-anchor-permalink" href="#Re-centring-the-period-prior-with-@set" title="Permalink"></a></h4><p>AutoGP works in <em>normalised</em> time: it rescales the training window to <code>[0, 1]</code>, so a <code>Periodic</code> kernel&#39;s period is expressed as a <strong>fraction of the window</strong>, and <code>prior[:period]</code> is a <code>LogNormal(μ, σ)</code> over that fraction. We can re-centre the prior using<code>@set</code> to give a new <code>μ</code> — here, held tightly with a small <code>σ</code>. For example, for a three year window of data an annual cycle is 1/3 of the window, so <code>μ = log(1/3)</code>:</p><pre><code class="language-julia hljs">seasonal_example = @set GPConfig().prior[:period][:mu] = -log(3.0)
+seasonal_example = @set seasonal_example.prior[:period][:sigma] = 0.1
+seasonal_example.prior[:period]</code></pre><pre><code class="nohighlight hljs">Dict{Symbol, Float64} with 2 entries:
+  :mu =&gt; -1.09861
+  :sigma =&gt; 0.1</code></pre><p><code>@set</code> returns a fresh <code>GPConfig</code>; every other prior, and other fields, are carried over unchanged. <code>@set</code> only touched <code>prior[:period]</code>:</p><pre><code class="language-julia hljs">seasonal_example.prior[:gamma] == GPConfig().prior[:gamma]</code></pre><pre><code class="nohighlight hljs">true</code></pre><h4 id="Alterating-the-leaf-kernel-distribution"><a class="docs-heading-anchor" href="#Alterating-the-leaf-kernel-distribution">Alterating the leaf-kernel distribution</a><a id="Alterating-the-leaf-kernel-distribution-1"></a><a class="docs-heading-anchor-permalink" href="#Alterating-the-leaf-kernel-distribution" title="Permalink"></a></h4><p>The leaf-kernel distribution is a simple probability vector over the primitive kernels. We can use <code>@set</code> to change it, for example to specialise on only Linear + Periodic kernels (indices 2 and 5):</p><pre><code class="language-julia hljs">config_lin_period = @set GPConfig().node_dist_leaf = [0.0, 0.5, 0.0, 0.0, 0.5]</code></pre><pre><code class="nohighlight hljs">AutoGP.GP.GPConfig
+  Constant: Int64 1
+  Linear: Int64 2
+  SquaredExponential: Int64 3
+  GammaExponential: Int64 4
+  Periodic: Int64 5
+  Plus: Int64 6
+  Times: Int64 7
+  ChangePoint: Int64 8
+  index_to_node: Dict{Integer, Type{&lt;:AutoGP.GP.Node}}
+  node_dist_leaf: Array{Float64}((5,)) [0.0, 0.5, 0.0, 0.0, 0.5]
+  node_dist_nocp: Array{Float64}((7,)) [0.0, 0.21428571428571427, 0.0, 0.21428571428571427, 0.21428571428571427, 0.17857142857142858, 0.17857142857142858]
+  node_dist_cp: Array{Float64}((8,)) [0.0, 0.21428571428571427, 0.0, 0.21428571428571427, 0.21428571428571427, 0.14285714285714285, 0.14285714285714285, 0.07142857142857142]
+  max_branch: Int64 2
+  max_depth: Int64 -1
+  changepoints: Bool true
+  noise: Nothing nothing
+  prior: Dict{Any, Any}
+</code></pre><h3 id="Forecasting-from-each-report-date"><a class="docs-heading-anchor" href="#Forecasting-from-each-report-date">Forecasting from each report date</a><a id="Forecasting-from-each-report-date-1"></a><a class="docs-heading-anchor-permalink" href="#Forecasting-from-each-report-date" title="Permalink"></a></h3><p>At each report date we fit four models on the data so far that only differ in their priors:</p><ul><li>Default prior (the default <code>GPConfig()</code>)</li><li>Default hyperpriors, but only <code>Linear</code> + <code>Periodic</code> primitive leaf-kernels allowed, prior on other kernels set to zero.</li><li>Seasonal hyperprior, fairly tight around an annual cycle, but the default primitive leaf-kernel distribution.</li><li>Seasonal hyperprior, <em>and</em> only <code>Linear</code> + <code>Periodic</code> primitive leaf-kernels allowed, prior on other kernels set to zero.</li></ul><p>Everything except <code>config</code> is identical; the <code>n_mcmc</code>/<code>n_hmc</code> controls pass straight through to <code>AutoGP.fit_smc!</code>. We also set <code>adaptive_rejuvenation = true</code> to use the classic SMC resample-then-move adaptive rejuvenation scheme; that is we make MCMC moves only when the effective sample size (ESS) of the particle ensemble drops below the default threshold of 50% of the particle number. Each fitted model is a particle ensemble over GP tree-kernels, so each forecast is a full predictive <em>distribution</em>.</p><pre><code class="language-julia hljs">n_particles = 32
+fit_params = (
+    smc_data_proportion = 0.005,
+    n_mcmc = 200,
+    n_hmc = 50,
+    adaptive_rejuvenation = true,
+)
+n_draws = 2000
+
+results = map(report_weeks) do w
+    horizon_dates = all_dates[(w + 1):(w + horizon)]
+    horizon_truth = observations[(w + 1):(w + horizon)]
+
+    transformation, inv_transformation = get_transformations(&quot;positive&quot;, observations[1:w])
+    train_data = create_transformed_data(
+        all_dates[1:w], observations[1:w]; transformation
+    )
+
+    # a seasonal prior for *this* window: an annual cycle is 365 days and the window spans
+    # `window_length` days, so in normalised units the period is 365/window_length → μ = log(365/window_length)
+    window_length = Dates.value(all_dates[w] - all_dates[1])
+    seasonal_config = @set GPConfig().prior[:period][:mu] = log(365 / window_length)
+    seasonal_config = @set seasonal_config.prior[:period][:sigma] = 0.3
+    seasonal_config_lin_period_prior = @set seasonal_config.node_dist_leaf = [0.0, 0.5, 0.0, 0.0, 0.5]
+    default_config_lin_period_prior = @set GPConfig().node_dist_leaf = [0.0, 0.5, 0.0, 0.0, 0.5]
+
+    default_model = make_and_fit_model(
+        train_data;
+        n_particles, config = GPConfig(), fit_params...
+    )
+    seasonal_model = make_and_fit_model(
+        train_data;
+        n_particles, config = seasonal_config, fit_params...
+    )
+    seasonal_config_lin_period_model = make_and_fit_model(
+        train_data;
+        n_particles, config = seasonal_config_lin_period_prior, fit_params...
+    )
+    default_config_lin_period_model = make_and_fit_model(
+        train_data;
+        n_particles, config = default_config_lin_period_prior, fit_params...
+    )
+
+    return (;
+        report_week = w,
+        horizon_dates,
+        horizon_truth,
+        default = forecast(
+            default_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        seasonal = forecast(
+            seasonal_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        seasonal_config_lin_period = forecast(
+            seasonal_config_lin_period_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        default_config_lin_period = forecast(
+            default_config_lin_period_model, horizon_dates, n_draws;
+            inv_transformation
+        ),
+        default_model = default_model,
+        seasonal_model = seasonal_model,
+        seasonal_config_lin_period_model = seasonal_config_lin_period_model,
+        default_config_lin_period_model = default_config_lin_period_model,
+    )
+end</code></pre><pre><code class="nohighlight hljs">[ Info: Using positive transformation with offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using positive transformation with offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using positive transformation with offset = 0.0
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+</code></pre><p>We forecast a year ahead from each report date under all four priors (one row each).</p><pre><code class="language-julia hljs">fig_forecasts = let
+    fig = Figure(size = (920, 720))
+    panels = (
+        (key = :default, row = 1, title = &quot;Default prior&quot;),
+        (key = :default_config_lin_period, row = 2, title = &quot;Default prior with linear/periodic GP structure&quot;),
+        (key = :seasonal, row = 3, title = &quot;Seasonal prior&quot;),
+        (key = :seasonal_config_lin_period, row = 4, title = &quot;Seasonal prior with linear/periodic GP structure&quot;),
+    )
+    tvals = Dates.value.(all_dates .- first(all_dates)) / 7
+    for panel in panels
+        ax = Axis(
+            fig[panel.row, 1];
+            xlabel = &quot;week&quot;, ylabel = &quot;value&quot;, title = panel.title,
+            yscale = log10,
+        )
+        scatter!(
+            ax, tvals, observations;
+            color = :black, label = &quot;observations&quot;
+        )
+        for (res, colour) in zip(results, report_colours)
+            fc = getproperty(res, panel.key)
+            fx = Dates.value.(res.horizon_dates .- first(all_dates)) / 7 # convert to weeks for x-axis
+            lower_025 = [quantile(row, 0.025) for row in eachrow(fc)]
+            lower_25 = [quantile(row, 0.25) for row in eachrow(fc)]
+            med = [quantile(row, 0.5) for row in eachrow(fc)]
+            upper_75 = [quantile(row, 0.75) for row in eachrow(fc)]
+            upper_975 = [quantile(row, 0.975) for row in eachrow(fc)]
+            band!(ax, fx, lower_025, upper_975; color = (colour, 0.2))
+            band!(ax, fx, lower_25, upper_75; color = (colour, 0.4))
+            lines!(ax, fx, med; color = colour, linewidth = 2.5, label = &quot;from week $(res.report_week)&quot;)
+        end
+        panel.row == 1 &amp;&amp; axislegend(ax; position = :lt, nbanks = 2)
+    end
+    fig
+end</code></pre><p><img src="../setting-priors-21.png" alt/></p><p>We see that incorporating our prior knowledge of seasonality substantially improves forecasts. However, this improvement is not uniform; at the first report date, when only one year of data is available, there is insufficient information to learn the secular trend underneath the seasonal variation. By one and a half years, the change in compared to the previous season is clearer, and the strong seasonal prior allows the model to extrapolate that pattern forward. This is especially pronounced when we restrict the leaf-kernel distribution to only allow <code>Linear</code> + <code>Periodic</code> primitives. Later on, the model has locked onto a combination of kernels that captures the trend and seasonality, so the restriction to <code>Linear</code> + <code>Periodic</code> leaves makes less difference.</p><h3 id="Scoring-with-CRPS"><a class="docs-heading-anchor" href="#Scoring-with-CRPS">Scoring with CRPS</a><a id="Scoring-with-CRPS-1"></a><a class="docs-heading-anchor-permalink" href="#Scoring-with-CRPS" title="Permalink"></a></h3><p>We score each forecast against out-of-sample observations using the <strong>Continuous Ranked Probability Score (CRPS)</strong> a proper scoring rule from the <a href="../getting-started/">Getting started</a> vignette (lower is better), reusing the same hand-rolled estimator:</p><p class="math-container">\[\text{CRPS}(X, y) = \mathbb{E}[|X - y|] - \frac{1}{2}\mathbb{E}[|X_1 - X_2|]\]</p><pre><code class="language-julia hljs"># Hand-rolled CRPS estimator (reproduced from the Getting started vignette).
+function crps(y::Real, X::Vector{&lt;:Real})
+    n = length(X)
+
+    # First term: E|X - y|
+    term1 = mean(abs.(X .- y))
+
+    # Second term: E|X_1 - X_2| over all ordered pairs
+    ordered_pairwise_diffs = [abs(X[i] - X[j]) for i in 1:n for j in (i + 1):n]
+    term2 = mean(ordered_pairwise_diffs)
+
+    # CRPS = E|X - y| - 0.5 * E|X_1 - X_2|
+    return term1 - 0.5 * term2
+end
+
+# mean CRPS over a forecast horizon for a (dates × draws) forecast matrix
+mean_crps(truth, fc) = mean(crps(y, collect(X)) for (y, X) in zip(truth, eachrow(fc)))
+
+crps_by_date = map(results) do res
+    (;
+        report_week = res.report_week,
+        default = mean_crps(res.horizon_truth, res.default),
+        default_lin_period = mean_crps(res.horizon_truth, res.default_config_lin_period),
+        seasonal = mean_crps(res.horizon_truth, res.seasonal),
+        seasonal_lin_period = mean_crps(res.horizon_truth, res.seasonal_config_lin_period),
+    )
+end</code></pre><pre><code class="nohighlight hljs">3-element Vector{@NamedTuple{report_week::Int64, default::Float64, default_lin_period::Float64, seasonal::Float64, seasonal_lin_period::Float64}}:
+ (report_week = 51, default = 150.96006350854293, default_lin_period = 145.27157670070207, seasonal = 148.997823973993, seasonal_lin_period = 136.28855586242133)
+ (report_week = 77, default = 373.30063983623944, default_lin_period = 316.81415453481105, seasonal = 113.39882438274986, seasonal_lin_period = 80.6348313345601)
+ (report_week = 103, default = 373.15777527071725, default_lin_period = 67.68526919040802, seasonal = 73.13602965490337, seasonal_lin_period = 69.887260753688)</code></pre><p>Scoring confirms the visual impression. The strong seasonal prior gives a markedly lower CRPS, after there is available contrast between the seasons to allow the secular trend to be learned.</p><pre><code class="language-julia hljs">fig_scores = let
+    # one dodged bar per approach, grouped by report date
+    approaches = [
+        (key = :default, label = &quot;default&quot;, colour = :tomato),
+        (key = :default_lin_period, label = &quot;default, lin+periodic leaves&quot;, colour = :goldenrod),
+        (key = :seasonal, label = &quot;seasonal&quot;, colour = :steelblue),
+        (key = :seasonal_lin_period, label = &quot;seasonal, lin+periodic leaves&quot;, colour = :seagreen),
+    ]
+    n = length(crps_by_date)
+
+    xs = Int[]
+    heights = Float64[]
+    dodge = Int[]
+    colours = Symbol[]
+    for (j, approach) in enumerate(approaches), (i, row) in enumerate(crps_by_date)
+        push!(xs, i)
+        push!(heights, getproperty(row, approach.key))
+        push!(dodge, j)
+        push!(colours, approach.colour)
+    end
+
+    fig = Figure(size = (820, 430))
+    ax = Axis(
+        fig[1, 1];
+        xticks = (1:n, [&quot;week $(row.report_week)&quot; for row in crps_by_date]),
+        ylabel = &quot;mean CRPS (lower is better)&quot;,
+        title = &quot;Forecast skill by report date and prior&quot;
+    )
+    barplot!(ax, xs, heights; dodge = dodge, color = colours)
+    Legend(
+        fig[1, 2],
+        [PolyElement(color = a.colour) for a in approaches],
+        [a.label for a in approaches]
+    )
+    fig
+end</code></pre><p><img src="../setting-priors-25.png" alt/></p><p>Averaged over the report dates the strong seasonal prior is the clear winner; the leaf-kernel restriction barely changes the score, with or without it:</p><pre><code class="language-julia hljs">overall_crps = (;
+    default = mean(row.default for row in crps_by_date),
+    default_lin_period = mean(row.default_lin_period for row in crps_by_date),
+    seasonal = mean(row.seasonal for row in crps_by_date),
+    seasonal_lin_period = mean(row.seasonal_lin_period for row in crps_by_date),
+)</code></pre><pre><code class="nohighlight hljs">(default = 299.13949287183317, default_lin_period = 176.59033347530703, seasonal = 111.84422600388207, seasonal_lin_period = 95.60354931688981)</code></pre><h2 id="Summary"><a class="docs-heading-anchor" href="#Summary">Summary</a><a id="Summary-1"></a><a class="docs-heading-anchor-permalink" href="#Summary" title="Permalink"></a></h2><ul><li><code>make_and_fit_model(...; config = ...)</code> forwards any <code>AutoGP.GP.GPConfig</code> to the model, so the full AutoGP prior is available without re-declaring it in <code>NowcastAutoGP</code>.</li><li><code>Accessors.@set</code> is a clean way to change one prior entry while preserving the rest, including deep edits into the nested <code>prior</code> <code>Dict</code>.</li><li>Re-centring the period <em>hyperparameter</em> prior (<code>prior[:period]</code>) on the seasonality you expect can substantially improve forecasts — here the strong seasonal prior gives the lowest mean CRPS across the report dates.</li><li>Editing the <em>structural</em> prior (<code>node_dist_leaf</code>) to allow only Linear + Periodic leaves also improves forecasts.</li><li>However, note that strong priors can be a double-edged sword: they can help when data are scarce, but if they are too tight or the wrong shape they can be a problem.</li></ul><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../use-percentages/">« Forecasting percentage data with <code>NowcastAutoGP</code></a><a class="docs-footer-nextpage" href="../../api/">API Reference »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 4 June 2026 10:50">Thursday 4 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>

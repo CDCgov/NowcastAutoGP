@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Forecasting percentage data with NowcastAutoGP · NowcastAutoGP.jl</title><meta name="title" content="Forecasting percentage data with NowcastAutoGP · NowcastAutoGP.jl"/><meta property="og:title" content="Forecasting percentage data with NowcastAutoGP · NowcastAutoGP.jl"/><meta property="twitter:title" content="Forecasting percentage data with NowcastAutoGP · NowcastAutoGP.jl"/><meta name="description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:description" content="Documentation for NowcastAutoGP.jl."/><meta property="twitter:description" content="Documentation for NowcastAutoGP.jl."/><meta property="og:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/use-percentages/"/><meta property="twitter:url" content="https://cdcgov.github.io/NowcastAutoGP/vignettes/use-percentages/"/><link rel="canonical" href="https://cdcgov.github.io/NowcastAutoGP/vignettes/use-percentages/"/><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.050/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../search_index.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-mocha.css" data-theme-name="catppuccin-mocha"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-macchiato.css" data-theme-name="catppuccin-macchiato"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-frappe.css" data-theme-name="catppuccin-frappe"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/catppuccin-latte.css" data-theme-name="catppuccin-latte"/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/material-theme.css" rel="stylesheet" type="text/css"/><script src="../../assets/material-theme.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">NowcastAutoGP.jl</a></span></div><button class="docs-search-query input is-rounded is-small is-clickable my-2 mx-auto py-1 px-2" id="documenter-search-query">Search docs (Ctrl + /)</button><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../getting-started/">Getting Started</a></li><li><span class="tocitem">Tutorials</span><ul><li class="is-active"><a class="tocitem" href>Forecasting percentage data with <code>NowcastAutoGP</code></a><ul class="internal"><li><a class="tocitem" href="#Loading-dependencies"><span>Loading dependencies</span></a></li><li><a class="tocitem" href="#Loading-Surveillance-Data"><span>Loading Surveillance Data</span></a></li><li><a class="tocitem" href="#Vintaged-Surveillance-Data"><span>Vintaged Surveillance Data</span></a></li><li><a class="tocitem" href="#Fitting-a-NowcastAutoGP-model-to-the-percentage-data"><span>Fitting a <code>NowcastAutoGP</code> model to the percentage data</span></a></li><li><a class="tocitem" href="#Forecasting-with-naive-nowcasts"><span>Forecasting with naive nowcasts</span></a></li></ul></li><li><a class="tocitem" href="../setting-priors/">Setting GP priors with <code>Accessors.jl</code></a></li></ul></li><li><a class="tocitem" href="../../api/">API Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><a class="docs-sidebar-button docs-navbar-link fa-solid fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Tutorials</a></li><li class="is-active"><a href>Forecasting percentage data with <code>NowcastAutoGP</code></a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Forecasting percentage data with <code>NowcastAutoGP</code></a></li></ul></nav><div class="docs-right"><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP" title="View the repository on GitHub"><span class="docs-icon fa-brands"></span><span class="docs-label is-hidden-touch">GitHub</span></a><a class="docs-navbar-link" href="https://github.com/CDCgov/NowcastAutoGP/blob/main/docs/src/vignettes/use-percentages.md" title="Edit source on GitHub"><span class="docs-icon fa-solid"></span></a><a class="docs-settings-button docs-navbar-link fa-solid fa-gear" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-article-toggle-button fa-solid fa-chevron-up" id="documenter-article-toggle-button" href="javascript:;" title="Collapse all docstrings"></a></div></header><article class="content" id="documenter-page"><pre><code class="language-julia hljs">using Markdown</code></pre><h1 id="Forecasting-percentage-data-with-NowcastAutoGP"><a class="docs-heading-anchor" href="#Forecasting-percentage-data-with-NowcastAutoGP">Forecasting percentage data with <code>NowcastAutoGP</code></a><a id="Forecasting-percentage-data-with-NowcastAutoGP-1"></a><a class="docs-heading-anchor-permalink" href="#Forecasting-percentage-data-with-NowcastAutoGP" title="Permalink"></a></h1><p><em>Forecasting public NSSP ED visit percentages</em></p><p><strong>CDC Center for Forecasting and Outbreak Analytics (CFA/CDC)</strong></p><p>In <a href="../getting-started/">Getting started with <code>NowcastAutoGP</code></a>, we saw how to use <code>NowcastAutoGP</code> to forecast a univariate time series of hospitalization counts by batching over nowcasts. In this vignette, we will demo how to use <code>NowcastAutoGP</code> to do the same with percentage data. This functionality is useful for forecasting public National Syndromic Surveillance Program (NSSP) Emergency Department (ED) visit percentages, that is the proportion of all ED visits in a period that are due to a specific condition.</p><h2 id="Loading-dependencies"><a class="docs-heading-anchor" href="#Loading-dependencies">Loading dependencies</a><a id="Loading-dependencies-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-dependencies" title="Permalink"></a></h2><pre><code class="language-julia hljs">using NowcastAutoGP
+using CairoMakie
+using Dates, Distributions, Random
+using CSV, TidierData
+using Parameters: @unpack
+
+Random.seed!(123)
+CairoMakie.activate!(type = &quot;png&quot;)</code></pre><h2 id="Loading-Surveillance-Data"><a class="docs-heading-anchor" href="#Loading-Surveillance-Data">Loading Surveillance Data</a><a id="Loading-Surveillance-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Loading-Surveillance-Data" title="Permalink"></a></h2><p>We are going to demonstrate using <code>NowcastAutoGP</code> for forecasting the CDC&#39;s National Syndromic Surveillance Program (NSSP) reported Influenza Emergency Department (ED) visit percentages. We stored a vintaged data set locally, which was accessed</p><pre><code class="language-julia hljs">datapath = joinpath(
+    pkgdir(NowcastAutoGP), &quot;docs&quot;, &quot;vignettes&quot;, &quot;data&quot;, &quot;vintaged_us_nssp_data_flu.csv&quot;
+)
+nssp_vintage_flu_data = CSV.read(datapath, DataFrame)
+
+nssp_vintage_flu_data = @chain nssp_vintage_flu_data begin
+    @rename(reference_date = target_end_date)
+    @rename(report_date = as_of)
+end
+nssp_vintage_flu_data = unique(nssp_vintage_flu_data, [:reference_date, :report_date])
+
+@glimpse nssp_vintage_flu_data
+
+unique_report_dates = sort(unique(nssp_vintage_flu_data.report_date))
+# Select every 2nd report date, but always include the latest one
+selected_dates = unique_report_dates[1:2:end]
+if unique_report_dates[end] ∉ selected_dates
+    selected_dates = vcat(selected_dates, unique_report_dates[end])
+end
+n_dates = length(selected_dates)
+
+# Set up shared x-axis tick positions and labels
+plot_start_date = Date(2025, 10, 1)
+plot_end_date = Date(2026, 2, 23)
+
+# Create tick positions and labels (show every 4 weeks ≈ monthly)
+tick_dates = collect(range(plot_start_date, step = Week(4), length = 13))
+tick_labels = [monthname(d)[1:3] * &quot;-&quot; * string(d)[(end - 1):end] for d in tick_dates]
+
+# Generate colors - latest date will be black
+colors = [i == n_dates ? :black : Makie.wong_colors()[mod1(i, 7)] for i in 1:n_dates]</code></pre><pre><code class="nohighlight hljs">6-element Vector{Any}:
+ RGBA{Float32}(0.0, 0.44705883, 0.69803923, 1.0)
+ RGBA{Float32}(0.9019608, 0.62352943, 0.0, 1.0)
+ RGBA{Float32}(0.0, 0.61960787, 0.4509804, 1.0)
+ RGBA{Float32}(0.8, 0.4745098, 0.654902, 1.0)
+ RGBA{Float32}(0.3372549, 0.7058824, 0.9137255, 1.0)
+ :black</code></pre><h2 id="Vintaged-Surveillance-Data"><a class="docs-heading-anchor" href="#Vintaged-Surveillance-Data">Vintaged Surveillance Data</a><a id="Vintaged-Surveillance-Data-1"></a><a class="docs-heading-anchor-permalink" href="#Vintaged-Surveillance-Data" title="Permalink"></a></h2><p>We plot the vintaged surveillance data, where each line represents the data as reported on a given report date. The latest vintage is shown in black.</p><pre><code class="language-julia hljs"># Create figure
+fig = Figure(size = (800, 600))
+ax = Axis(
+    fig[1, 1],
+    xlabel = &quot;Reference Date&quot;,
+    ylabel = &quot;NSSP confirmed Influenza ED visit percentages&quot;,
+    title = &quot;Reference Date vs Confirm by Report Date (Oct 2025+, all US)&quot;
+)
+
+# Plot each selected report date using reference_date directly
+for (report_date, color) in zip(selected_dates, colors)
+    date_data = @chain nssp_vintage_flu_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    scatterlines!(
+        ax, date_data.reference_date, date_data.nssp_pcr,
+        color = color,
+        label = string(report_date),
+        markersize = 8,
+        linewidth = 2
+    )
+end
+
+# Set ticks and limits after plotting (DateTimeConversion is now active)
+ax.xticks = (tick_dates, tick_labels)
+axislegend(ax, &quot;report dates&quot;; position = :rt)
+xlims!(ax, plot_start_date, plot_end_date)
+ylims!(ax, 0, 10)
+resize_to_layout!(fig)
+fig</code></pre><p><img src="../use-percentages-7.png" alt/></p><p>We see that the reported percentages for a given reference date change less over time than the total counts did in the previous vignette, but there are still some changes over time. In this vignette, we illustrate how to use <code>NowcastAutoGP</code> to forecast the percentage data, and we will just use the latest vintage for training, which is the black line in the plot above. For nowcasting options please refer back to the <a href="../getting-started/">Getting started with <code>NowcastAutoGP</code></a> vignette.</p><h2 id="Fitting-a-NowcastAutoGP-model-to-the-percentage-data"><a class="docs-heading-anchor" href="#Fitting-a-NowcastAutoGP-model-to-the-percentage-data">Fitting a <code>NowcastAutoGP</code> model to the percentage data</a><a id="Fitting-a-NowcastAutoGP-model-to-the-percentage-data-1"></a><a class="docs-heading-anchor-permalink" href="#Fitting-a-NowcastAutoGP-model-to-the-percentage-data" title="Permalink"></a></h2><p>We will use the nearly the same code as in the previous vignette to fit a <code>NowcastAutoGP</code> model but note that we will use the &quot;percentage&quot; transformations instead of &quot;boxcox&quot; transformations, which are more appropriate for percentage data. This transform applies a scaled logit transformation to the data, which maps the percentages from the (0, 100) range to the real line.</p><pre><code class="language-julia hljs">function fit_on_data(
+        report_date;
+        n_redact,
+        max_ahead = 8,
+        training_data = training_data,
+        n_particles = 24, # number of SMC particles, i.e. GP models, to maintain in the ensemble
+        smc_data_proportion = 0.1, # proportion of data to ingest per SMC step, by default shuffled batches
+        n_mcmc = 100, n_hmc = 20 # number of MCMC and HMC steps to run after each SMC step for particle refinement/refresh
+    )
+
+    # Filter for correct report date
+    date_data = @chain training_data begin
+        @filter(report_date == !!report_date)
+        @arrange(reference_date)
+    end
+
+    # Dates to forecast
+    forecast_dates = [maximum(date_data.reference_date) + Week(k) for k in 0:max_ahead]
+
+    transformation, inv_transformation = get_transformations(&quot;percentage&quot;, date_data.nssp_pcr)
+    data_to_fit = create_transformed_data(
+        date_data.reference_date[1:(end - n_redact)],
+        date_data.nssp_pcr[1:(end - n_redact)]; transformation
+    )
+    data_to_revise = (
+        revise_dates = date_data.reference_date[(end - n_redact + 1):end],
+        revise_values = date_data.nssp_pcr[(end - n_redact + 1):end],
+    )
+    model = make_and_fit_model(
+        data_to_fit;
+        n_particles,
+        smc_data_proportion,
+        n_mcmc, n_hmc
+    )
+    return model, forecast_dates, transformation, inv_transformation, data_to_revise
+end</code></pre><p>We also give a handy plotting utility for plotting our results.</p><pre><code class="language-julia hljs">function plot_with_forecasts(
+        forecasts, title::String;
+        n_ahead,
+        selected_dates,
+        colors = colors,
+        flu_data = nssp_vintage_flu_data,
+        plot_start_date = plot_start_date,
+        plot_end_date = plot_end_date,
+        y_lim_up = 10,
+        size = (1000, 700),
+        xticks = (tick_dates, tick_labels)
+    )
+    # Convert Date xticks to numeric — band! and lines! don&#39;t support Date
+    numeric_xticks = (Dates.value.(xticks[1]), xticks[2])
+
+    fig = Figure(size = size)
+    ax = Axis(
+        fig[1, 1],
+        xlabel = &quot;Reference Date&quot;,
+        ylabel = &quot;NSSP confirmed Influenza ED visit percentages&quot;,
+        title = title,
+        xticks = numeric_xticks
+    )
+
+    # Plot forecasts
+    for (report_date, forecast, color) in zip(selected_dates, forecasts, colors)
+        date_data = @chain flu_data begin
+            @filter(report_date == !!report_date)
+            @arrange(reference_date)
+        end
+
+        # Plot historical data as light lines
+        scatterlines!(
+            ax, Dates.value.(date_data.reference_date), date_data.nssp_pcr,
+            color = color,
+            linewidth = 2,
+            label = &quot;$(report_date) data&quot;
+        )
+
+        # Extract quantiles for forecasts
+        q25 = forecast.iqrs[1:n_ahead, 1]
+        median = forecast.iqrs[1:n_ahead, 2]
+        q75 = forecast.iqrs[1:n_ahead, 3]
+        forecast_date_values = Dates.value.(forecast.dates[1:n_ahead])
+
+        # Plot uncertainty band (25%-75%)
+        band!(
+            ax, forecast_date_values, q25, q75,
+            color = (color, 0.3)
+        )
+
+        # Plot median forecast
+        lines!(
+            ax, forecast_date_values, median,
+            color = color,
+            linewidth = 3,
+            linestyle = :dash
+        )
+    end
+
+    axislegend(ax, &quot;report dates&quot;; position = :rt)
+    xlims!(ax, Dates.value(plot_start_date), Dates.value(plot_end_date))
+    ylims!(ax, 0, y_lim_up)
+    resize_to_layout!(fig)
+    return fig
+end</code></pre><p>We now fit a model for each selected report date. We redact the most recent week of data (<code>n_redact = 1</code>) to simulate the effect of reporting delays, and store the fitted model along with forecast dates and transformation functions.</p><pre><code class="language-julia hljs">fitted_models_by_report_date = map(selected_dates) do report_date
+    model, forecast_dates,
+        transformation,
+        inv_transformation,
+        data_to_revise = fit_on_data(
+        report_date;
+        n_redact = 1,
+        training_data = nssp_vintage_flu_data,
+        n_particles = 24
+    )
+    return (
+        model_dict = Dict(model), forecast_dates = forecast_dates,
+        transformation = transformation, inv_transformation = inv_transformation,
+        data_to_revise = data_to_revise,
+    )
+end</code></pre><pre><code class="nohighlight hljs">[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+[ Info: Using percentage transformation
+┌ Warning: Using more particles than available threads.
+└ @ AutoGP ~/.julia/packages/AutoGP/SVRPE/src/api.jl:226
+</code></pre><h2 id="Forecasting-with-naive-nowcasts"><a class="docs-heading-anchor" href="#Forecasting-with-naive-nowcasts">Forecasting with naive nowcasts</a><a id="Forecasting-with-naive-nowcasts-1"></a><a class="docs-heading-anchor-permalink" href="#Forecasting-with-naive-nowcasts" title="Permalink"></a></h2><p>As an example, we forecast naively by treating the latest reported percentage as the best estimate of the eventual value.</p><pre><code class="language-julia hljs">n_forecasts = 2000
+naive_forecasts_by_reference_date = map(fitted_models_by_report_date) do fitted_model
+    @unpack model_dict, forecast_dates, transformation, inv_transformation,
+        data_to_revise = fitted_model
+    model = GPModel(model_dict)
+
+    naive_nowcasts = create_nowcast_data(
+        [data_to_revise.revise_values], data_to_revise.revise_dates;
+        transformation = transformation,
+    )
+
+    forecasts = forecast_with_nowcasts(
+        model, naive_nowcasts, forecast_dates, n_forecasts;
+        inv_transformation = inv_transformation,# forecast_n_hmc = 1,
+    )
+
+    iqr_forecasts = mapreduce(vcat, eachrow(forecasts)) do fc
+        qs = quantile(fc, [0.25, 0.5, 0.75])
+        qs&#39;
+    end
+
+    return (dates = forecast_dates, forecasts = forecasts, iqrs = iqr_forecasts)
+end</code></pre><p>For more sophisticated nowcasting approaches that correct for this, refer back to the <a href="../getting-started/">Getting started with <code>NowcastAutoGP</code></a> vignette.</p><pre><code class="language-julia hljs">plot_with_forecasts(
+    naive_forecasts_by_reference_date, &quot;Forecasts from Different Report Dates (naive)&quot;;
+    n_ahead = 4,
+    selected_dates = selected_dates
+)</code></pre><p><img src="../use-percentages-17.png" alt/></p><hr/><p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../getting-started/">« Getting Started</a><a class="docs-footer-nextpage" href="../setting-priors/">Setting GP priors with <code>Accessors.jl</code> »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="auto">Automatic (OS)</option><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option><option value="catppuccin-latte">catppuccin-latte</option><option value="catppuccin-frappe">catppuccin-frappe</option><option value="catppuccin-macchiato">catppuccin-macchiato</option><option value="catppuccin-mocha">catppuccin-mocha</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 1.17.0 on <span class="colophon-date" title="Thursday 4 June 2026 10:50">Thursday 4 June 2026</span>. Using Julia version 1.12.6.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
