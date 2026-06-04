@@ -17,7 +17,7 @@ In this vignette we are interested in two different priors.
 First, the underlying `AutoGP` kernel structure can be represented as a tree with primitive kernels at the leaves, and the internal nodes describing the combinations
 `Plus`, `Times` and `ChangePoint`, c.f. [AutoGP.jl documentation](https://probsys.github.io/AutoGP.jl/stable/api.html).
 We can use the configuration to set the prior probability for each of the primitive kernels to be a leaf in the structure.
-Second, we can set three hyperparameter priors for the `gamma` lengthscale exponent for `GammaExponential` primitive, 
+Second, we can set three hyperparameter priors for the `gamma` lengthscale exponent for `GammaExponential` primitive,
 `period` period for `Periodic` primitive and `wildcard` for all other hyperparameters.
 
 We will show how to edit the period prior, and likelihood of `Periodic` primitive kernels in the tree kernel structure, to give a
@@ -25,7 +25,7 @@ a strong seasonal prior, and how that improves forecasts. We score forecasts fol
 
 `GPConfig` is an immutable struct which makes "change just this one field" awkward to write by hand.
 [`Accessors.jl`](https://github.com/JuliaObjects/Accessors.jl)'s `@set` macro does exactly that: it
-returns a *copy* with the chosen field(s) changed and all the others preserved. 
+returns a *copy* with the chosen field(s) changed and all the others preserved.
 
 > `Accessors.jl` is a convenience used here in the docs; it is **not** a dependency of
 > `NowcastAutoGP` itself. The same edits can be made by constructing a `GPConfig` directly.
@@ -77,7 +77,7 @@ exp(default_config.prior[:period][:mu]) # ≈ 0.22 of the window
 md"""
 ## Example: A seasonal series and a few report dates
 
-In this example, we imagine having a new data stream for a pathogen, which _a priori_ we know has a strong 
+In this example, we imagine having a new data stream for a pathogen, which _a priori_ we know has a strong
 annual cycle.
 We will make year long forecasts from three different report dates as data accrue: at one, one-and-a-half and two years of history.
 We will show how to build a strong seasonal prior into the model in two ways:
@@ -121,7 +121,7 @@ fig_data = let
         color = (:black, 0.8), markersize = 5, label = "observed"
     )
     vlines!(
-        ax, Dates.value.(all_dates[report_weeks]  .- first(all_dates)) ./ 7;
+        ax, Dates.value.(all_dates[report_weeks] .- first(all_dates)) ./ 7;
         color = report_colours, linestyle = :dash, linewidth = 2
     )
     axislegend(ax; position = :lt)
@@ -401,5 +401,3 @@ md"""
 - Editing the *structural* prior (`node_dist_leaf`) to allow only Linear + Periodic leaves also improves forecasts.
 - However, note that strong priors can be a double-edged sword: they can help when data are scarce, but if they are too tight or the wrong shape they can be a problem.
 """
-
-
