@@ -1,5 +1,9 @@
 using Literate
-vignettes_to_make = ["getting-started.jl", "use-percentages.jl"]
+vignettes_to_make = [
+    "getting-started.jl",
+    "use-percentages.jl",
+    "setting-priors.jl",
+]
 
 # Generate markdown with executed output from Literate.jl scripts.
 # Uses CommonMarkFlavor so Documenter.jl won't re-evaluate code blocks.

@@ -15,7 +15,7 @@ NowcastAutoGP.jl is a **Julia package for forecasting with nowcasting** that com
 
 ### Main Pipeline (see `docs/vignettes/tutorial.qmd` for complete example)
 1. **Transform Data**: `create_transformed_data(dates, values; transformation)` using `get_transformations()`
-2. **Fit Base Model**: `make_and_fit_model(data)` on historical "confirmed" data
+2. **Fit Base Model**: `make_and_fit_model(data; n_mcmc=200, n_hmc=50)` on historical "confirmed" data (`n_mcmc`/`n_hmc` are required pass-through kwargs of `AutoGP.fit_smc!`)
 3. **Create Nowcasts**: Generate multiple `TData` objects representing uncertain recent data scenarios
 4. **Forecast with Uncertainty**: `forecast_with_nowcasts()` temporarily adds each nowcast to model, generates forecasts, then removes it
 
@@ -40,14 +40,15 @@ NowcastAutoGP.jl is a **Julia package for forecasting with nowcasting** that com
 ```julia
 # Standard pattern for fitting
 model = make_and_fit_model(data;
-    n_particles=8,           # SMC particles
-    smc_data_proportion=0.1, # Data proportion per SMC step
-    n_mcmc=200,             # MCMC structure steps
-    n_hmc=50                # HMC parameter steps
+    n_particles=8,           # SMC particles (forwarded to AutoGP.GPModel)
+    smc_data_proportion=0.1, # Data proportion per SMC step (wrapper-only; builds the schedule)
+    config=GPConfig(),       # GP prior; pass a customised GPConfig() to change kernel structure / priors
+    n_mcmc=200,              # forwarded to AutoGP.fit_smc! via kwargs...
+    n_hmc=50                 # forwarded to AutoGP.fit_smc! via kwargs...
 )
 ```
 
-**Key Implementation Detail**: `effective_proportion = max(smc_data_proportion, 1.0/n_train)` prevents schedule step=0 errors with small datasets.
+**Key Implementation Detail**: Only `n_particles`, `smc_data_proportion`, and `config` are named wrapper kwargs; everything else (`n_mcmc`, `n_hmc`, `hmc_config`, `biased`, `shuffle`, `verbose`, …) is passed straight through `kwargs...` to `AutoGP.fit_smc!` rather than re-declared here. `effective_proportion = max(smc_data_proportion, 1.0/n_train)` prevents schedule step=0 errors with small datasets.
 
 ## Forecasting with Nowcasts (`src/forecasting.jl`)
 

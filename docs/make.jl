@@ -7,6 +7,7 @@ pages = [
     "Getting Started" => "vignettes/getting-started.md",
     "Tutorials" => [
         "vignettes/use-percentages.md",
+        "vignettes/setting-priors.md",
     ],
     "API Reference" => "api.md",
 ]
