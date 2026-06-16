@@ -23,8 +23,7 @@ so that every `min(t, t') - origin >= 0`. This is the GP analogue of an i.i.d.-i
 random walk.
 
 This kernel is defined in `NowcastAutoGP` (not `AutoGP`) by extending `AutoGP`'s `GP` interface
-([`eval_cov`](@ref), [`reparameterize`](@ref), [`rescale`](@ref)). It mirrors AutoGP's
-primitive kernel structure/
+(`eval_cov`, `reparameterize`, `rescale`). It mirrors AutoGP's primitive kernel structure.
 """
 struct RandomWalk <: LeafNode
     origin::Real
