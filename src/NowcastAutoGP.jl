@@ -8,7 +8,7 @@ using ProgressMeter: @showprogress, Progress, next!
 
 const GPModel = AutoGP.GPModel # re-exporting for convenience
 const GPConfig = AutoGP.GP.GPConfig # re-exporting for convenience
-export TData, GPModel, GPConfig, RandomWalk
+export TData, GPModel, GPConfig, RandomWalk, IntegratedBrownianMotion
 export create_transformed_data, get_transformations, make_and_fit_model, forecast,
     forecast_with_nowcasts, create_nowcast_data
 
