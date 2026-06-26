@@ -19,6 +19,45 @@ end
     @test model.config.changepoints == false
 end
 
+@testitem "make_and_fit_model fits with custom RandomWalk and IntegratedBrownianMotion leaves" setup = [ModelFittingData] begin
+    data = create_transformed_data(dates, values; transformation = identity)
+    norm(v) = v ./ sum(v)
+
+    cfg = GPConfig(
+        index_to_node = Dict{Integer,Type{<:AutoGP.GP.Node}}(
+            1 => AutoGP.GP.Constant,
+            2 => AutoGP.GP.Linear,
+            3 => AutoGP.GP.SquaredExponential,
+            4 => AutoGP.GP.GammaExponential,
+            5 => AutoGP.GP.Periodic,
+            6 => RandomWalk,
+            7 => IntegratedBrownianMotion,
+            8 => AutoGP.GP.Plus,
+            9 => AutoGP.GP.Times,
+            10 => AutoGP.GP.ChangePoint,
+        ),
+        Plus = 8,
+        Times = 9,
+        ChangePoint = 10,
+        node_dist_leaf = norm([0.0, 0, 0, 0, 0, 1, 1]),
+        node_dist_nocp = norm([0.0, 0, 0, 0, 0, 6, 6, 1, 1]),
+        node_dist_cp = norm([0.0, 0, 0, 0, 0, 6, 6, 1, 1, 1]),
+        changepoints = false,
+        max_depth = 1,
+    )
+
+    model = make_and_fit_model(data; config = cfg, test_params...)
+
+    @test model isa AutoGP.GPModel
+    @test model.config.index_to_node[6] === RandomWalk
+    @test model.config.index_to_node[7] === IntegratedBrownianMotion
+    @test length(model.config.node_dist_leaf) == 7
+    @test all(
+        kernel -> typeof(kernel) in (RandomWalk, IntegratedBrownianMotion),
+        AutoGP.covariance_kernels(model; reparameterize = false),
+    )
+end
+
 @testitem "make_and_fit_model forwards a custom prior" setup = [ModelFittingData] begin
     data = create_transformed_data(dates, values; transformation = identity)
 
