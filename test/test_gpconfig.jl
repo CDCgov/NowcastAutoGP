@@ -24,7 +24,7 @@ end
     norm(v) = v ./ sum(v)
 
     cfg = GPConfig(
-        index_to_node = Dict{Integer,Type{<:AutoGP.GP.Node}}(
+        index_to_node = Dict{Integer, Type{<:AutoGP.GP.Node}}(
             1 => AutoGP.GP.Constant,
             2 => AutoGP.GP.Linear,
             3 => AutoGP.GP.SquaredExponential,

@@ -70,7 +70,7 @@ normalize_prob(v) = v ./ sum(v)
 
 function trend_leaf_config(; changepoints = false, max_depth = 3)
     return GPConfig(
-        index_to_node = Dict{Integer,Type{<:AGP.GP.Node}}(
+        index_to_node = Dict{Integer, Type{<:AGP.GP.Node}}(
             1 => AGP.GP.Constant,
             2 => AGP.GP.Linear,
             3 => AGP.GP.SquaredExponential,
@@ -117,8 +117,8 @@ tt = collect(0:(n_all - 1))
 
 smooth_ramp(x) = x <= 0 ? 0.0 : x^2
 truth = [
-    45.0 + 0.10 * t + 0.010 * smooth_ramp(t - 25) - 0.014 * smooth_ramp(t - 70)
-    for t in tt
+    45.0 + 0.1 * t + 0.01 * smooth_ramp(t - 25) - 0.014 * smooth_ramp(t - 70)
+        for t in tt
 ]
 observations = truth .+ 1.2 .* randn(n_all)
 
@@ -210,9 +210,9 @@ fig_forecasts = let
     lines!(ax, x_all, truth; color = (:black, 0.5), linestyle = :dash, linewidth = 2, label = "expected")
 
     for (fc, color, label) in (
-        (default_forecast, :tomato, "default leaves"),
-        (trend_forecast, :steelblue, "custom trend leaves"),
-    )
+            (default_forecast, :tomato, "default leaves"),
+            (trend_forecast, :steelblue, "custom trend leaves"),
+        )
         s = forecast_summary(fc)
         band!(ax, x_fc, s.lower_025, s.upper_975; color = (color, 0.18))
         band!(ax, x_fc, s.lower_25, s.upper_75; color = (color, 0.35))
