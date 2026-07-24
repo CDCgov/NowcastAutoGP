@@ -14,7 +14,8 @@ AutoGP leaf nodes:
 - `RandomWalk`, a Brownian-motion covariance for drifting levels.
 - `IntegratedBrownianMotion`, an integrated Brownian-motion covariance for drifting slopes.
 
-These kernels are non-stationary: their covariance depends on distance from the
+These kernels are non-stationary, which extends the set of non-stationary kernels available in `AutoGP`.
+Note that non-stationary kernels of time-varying processes have their covariance depend on distance from the
 start of the time axis, not just on pairwise distances. `AutoGP` rescales the
 training dates to `[0, 1]` before fitting, so both kernels are anchored at
 normalised time zero and sample only their variance `amplitude`.
@@ -92,7 +93,7 @@ normalize_prob(v) = v ./ sum(v)
 
 function trend_leaf_config(; changepoints = false, max_depth = 3)
     return GPConfig(
-        index_to_node = Dict{Integer,Type{<:AGP.GP.Node}}(
+        index_to_node = Dict{Integer, Type{<:AGP.GP.Node}}(
             1 => AGP.GP.Constant,
             2 => AGP.GP.Linear,
             3 => AGP.GP.SquaredExponential,
@@ -150,8 +151,8 @@ tt = collect(0:(n_all - 1))
 
 smooth_ramp(x) = x <= 0 ? 0.0 : x^2
 truth = [
-    45.0 + 0.10 * t + 0.010 * smooth_ramp(t - 25) - 0.014 * smooth_ramp(t - 70)
-    for t in tt
+    45.0 + 0.1 * t + 0.01 * smooth_ramp(t - 25) - 0.014 * smooth_ramp(t - 70)
+        for t in tt
 ]
 observations = truth .+ 1.2 .* randn(n_all)
 
@@ -217,14 +218,14 @@ AGP.GP.pretty.(AGP.covariance_kernels(trend_model; reparameterize = false))
 
 ````
 8-element Vector{String}:
- "(IBM(1.21) + CONST(0.39))"
- "((IBM(0.40) + IBM(0.23)) + CONST(0.37))"
- "(IBM(0.23) + (LIN(0.09; 0.12, 0.04) + IBM(0.54)))"
- "(IBM(0.27) + LIN(0.50; 0.06, 0.13))"
- "((IBM(1.81) * LIN(0.07; 0.51, 0.70)) + (LIN(0.06; 0.59, 0.07) + CONST(0.15)))"
- "(IBM(0.43) + LIN(0.04; 0.08, 0.17))"
- "(IBM(0.19) + (IBM(0.14) + CONST(0.13)))"
- "(IBM(0.61) + (CONST(0.06) + LIN(0.14; 0.07, 0.07)))"
+ "((IBM(0.32) + IBM(0.27)) + (CONST(0.19) * CONST(0.19)))"
+ "(IBM(0.66) + CONST(0.15))"
+ "(IBM(0.60) + (CONST(0.12) + CONST(0.08)))"
+ "(IBM(0.32) + (CONST(0.12) + IBM(0.37)))"
+ "(LIN(0.44; 0.10, 0.13) + (LIN(0.95; 0.10, 0.35) + IBM(0.41)))"
+ "((IBM(0.47) + LIN(0.27; 0.68, 0.08)) + IBM(0.28))"
+ "(LIN(0.06; 0.20, 1.35) + IBM(0.69))"
+ "(IBM(0.58) + LIN(0.13; 0.81, 0.13))"
 ````
 
 ## Forecast comparison
@@ -255,9 +256,9 @@ fig_forecasts = let
     lines!(ax, x_all, truth; color = (:black, 0.5), linestyle = :dash, linewidth = 2, label = "expected")
 
     for (fc, color, label) in (
-        (default_forecast, :tomato, "default leaves"),
-        (trend_forecast, :steelblue, "custom trend leaves"),
-    )
+            (default_forecast, :tomato, "default leaves"),
+            (trend_forecast, :steelblue, "custom trend leaves"),
+        )
         s = forecast_summary(fc)
         band!(ax, x_fc, s.lower_025, s.upper_975; color = (color, 0.18))
         band!(ax, x_fc, s.lower_25, s.upper_75; color = (color, 0.35))
@@ -297,7 +298,7 @@ scores = (;
 ````
 
 ````
-(default = 8.476082435796751, custom_trend_leaves = 1.6278334401985715)
+(default = 8.44995410061826, custom_trend_leaves = 1.6006683695774713)
 ````
 
 The absolute numbers will vary with the random seed and fitting settings, but
