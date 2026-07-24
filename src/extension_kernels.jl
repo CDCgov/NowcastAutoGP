@@ -1,5 +1,3 @@
-import AutoGP.GP: LeafNode, eval_cov, reparameterize, rescale, pretty, LinearTransform
-
 #############################
 ### RandomWalk kernel #######
 #############################
@@ -20,7 +18,8 @@ scales the per-unit-time variance. Draws from this kernel are continuous-time ra
 This kernel is positive semidefinite when evaluated on nonnegative time points. AutoGP rescales
 time to `[0, 1]` before fitting, so anchoring the process at zero lets AutoGP sample only the
 variance amplitude. Use a `Constant` kernel alongside `RandomWalk` when the initial level should
-also be uncertain.
+also be uncertain. When `covariance_kernels` reports the fitted kernel in the original time units,
+only the amplitude is rescaled (by the time-transform slope); the zero anchor is retained.
 
 This kernel is defined in `NowcastAutoGP` (not `AutoGP`) by extending `AutoGP`'s `GP` interface
 (`eval_cov`, `reparameterize`, `rescale`). It mirrors AutoGP's primitive kernel structure.
@@ -36,9 +35,14 @@ function eval_cov(node::RandomWalk, ts::Vector{Float64})
     return node.amplitude .* min.(ts, ts')
 end
 
-# Input scaling f(t) = a*t + b (a = t.slope > 0) contributes one power of slope to
-# the random-walk covariance. The anchored representation does not carry a translated
-# origin, so reparameterization keeps the zero anchor in the target coordinate system.
+# `reparameterize` re-expresses the fitted amplitude in the original time units. AutoGP only
+# calls it to report kernels (via `covariance_kernels`), never on the fit/predict path, which
+# works entirely in normalized `[0, 1]` time. Under an input warp f(t) = slope*t + intercept,
+# min(f(t), f(u)) = slope*min(t, u) + intercept, so exact equivalence would need an added
+# `intercept * amplitude` constant. A `RandomWalk` is pinned to zero variance at its anchor and
+# cannot carry that constant, so we scale the amplitude by `slope` and keep the anchor at
+# normalized zero. This is exact only for pure scalings (intercept == 0); under AutoGP's `[0, 1]`
+# time transform it reports the slope-scaled amplitude anchored at the start of the data.
 function reparameterize(node::RandomWalk, t::LinearTransform)
     amplitude = t.slope * node.amplitude
     return RandomWalk(amplitude)
@@ -74,7 +78,9 @@ natural choice for trends whose *rate of change* drifts like a random walk.
 This kernel is positive semidefinite when evaluated on nonnegative time points. AutoGP rescales
 time to `[0, 1]` before fitting, so anchoring the process at zero lets AutoGP sample only the
 variance amplitude. Use `Constant` + `Linear` + `IntegratedBrownianMotion` when the initial
-level and slope should also be uncertain.
+level and slope should also be uncertain. When `covariance_kernels` reports the fitted kernel in
+the original time units, only the amplitude is rescaled (by the time-transform slope); the zero
+anchor is retained.
 
 Like [`RandomWalk`](@ref), this kernel is defined in `NowcastAutoGP` (not `AutoGP`) by
 extending `AutoGP`'s `GP` interface (`eval_cov`, `reparameterize`, `rescale`).
@@ -103,9 +109,14 @@ function eval_cov(node::IntegratedBrownianMotion, ts::Vector{Float64})
     return node.amplitude .* a .^ 2 .* (3 .* b .- a) ./ 6
 end
 
-# Input scaling f(t) = a*t + b (a = t.slope > 0) contributes three powers of slope to the
-# integrated-Brownian-motion covariance. The anchored representation does not carry a
-# translated origin, so reparameterization keeps the zero anchor in the target coordinate system.
+# `reparameterize` re-expresses the fitted amplitude in the original time units. AutoGP only
+# calls it to report kernels (via `covariance_kernels`), never on the fit/predict path, which
+# works entirely in normalized `[0, 1]` time. A pure input scaling t -> slope*t contributes three
+# powers of slope to the covariance. A nonzero intercept would additionally spill lower-order
+# terms that a zero-anchored integrated Brownian motion cannot represent, so we scale the
+# amplitude by `slope^3` and keep the anchor at normalized zero. This is exact only for pure
+# scalings (intercept == 0); under AutoGP's `[0, 1]` time transform it reports the slope-scaled
+# amplitude anchored at the start of the data.
 function reparameterize(node::IntegratedBrownianMotion, t::LinearTransform)
     amplitude = t.slope^3 * node.amplitude
     return IntegratedBrownianMotion(amplitude)

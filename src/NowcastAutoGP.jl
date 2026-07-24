@@ -6,6 +6,8 @@ using LogExpFunctions: logit, logistic
 using Printf: @sprintf
 using ProgressMeter: @showprogress, Progress, next!
 
+import AutoGP.GP: LeafNode, eval_cov, reparameterize, rescale, pretty, LinearTransform
+
 const GPModel = AutoGP.GPModel # re-exporting for convenience
 const GPConfig = AutoGP.GP.GPConfig # re-exporting for convenience
 export TData, GPModel, GPConfig, RandomWalk, IntegratedBrownianMotion

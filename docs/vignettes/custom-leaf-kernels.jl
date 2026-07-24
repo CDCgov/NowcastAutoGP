@@ -12,7 +12,8 @@ AutoGP leaf nodes:
 - `RandomWalk`, a Brownian-motion covariance for drifting levels.
 - `IntegratedBrownianMotion`, an integrated Brownian-motion covariance for drifting slopes.
 
-These kernels are non-stationary: their covariance depends on distance from the
+These kernels are non-stationary, which extends the set of non-stationary kernels available in `AutoGP`.
+Note that non-stationary kernels of time-varying processes have their covariance depend on distance from the
 start of the time axis, not just on pairwise distances. `AutoGP` rescales the
 training dates to `[0, 1]` before fitting, so both kernels are anchored at
 normalised time zero and sample only their variance `amplitude`.
