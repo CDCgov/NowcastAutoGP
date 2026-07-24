@@ -8,6 +8,7 @@ pages = [
     "Tutorials" => [
         "vignettes/use-percentages.md",
         "vignettes/setting-priors.md",
+        "vignettes/custom-leaf-kernels.md",
     ],
     "API Reference" => "api.md",
 ]
