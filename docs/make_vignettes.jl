@@ -3,6 +3,7 @@ vignettes_to_make = [
     "getting-started.jl",
     "use-percentages.jl",
     "setting-priors.jl",
+    "custom-leaf-kernels.jl",
 ]
 
 # Generate markdown with executed output from Literate.jl scripts.
