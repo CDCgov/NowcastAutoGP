@@ -25,6 +25,10 @@ Generate forecast samples from a fitted `AutoGP` model.
 
 # Returns
 - A matrix of samples with size `(length(forecast_dates), forecast_draws)`.
+
+# Count models
+For a model fitted to [`CountData`](@ref), the samples are integer counts drawn from the
+count observation model, and `inv_transformation` should be left at its default.
 """
 function forecast(
         model::AutoGP.GPModel, forecast_dates, forecast_draws::Int;
@@ -43,8 +47,7 @@ function _forecast(
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
     _forecasts = _with_single_blas() do
-        dist = AutoGP.predict_mvn(model, dates_vector)
-        rand(dist, forecast_draws)
+        _sample_predictive(model, dates_vector, forecast_draws)
     end
     # Apply inverse transformation to the forecasts
     forecasts = inv_transformation.(_forecasts)
@@ -57,16 +60,13 @@ function _forecast(
     )
     # Convert forecast_dates to vector if it's a range
     dates_vector = collect(forecast_dates)
-    n_dates = length(dates_vector)
     _forecasts = _with_single_blas() do
-        out = Matrix{Float64}(undef, n_dates, forecast_draws)
-        for i in 1:forecast_draws
+        draws = map(1:forecast_draws) do _
             # Refine the GP models with HMC steps for each forecast draw
             AutoGP.mcmc_parameters!(model, forecast_n_hmc)
-            dist = AutoGP.predict_mvn(model, dates_vector)
-            out[:, i] = rand(dist)
+            _sample_predictive(model, dates_vector, 1)
         end
-        return out
+        return reduce(hcat, draws)
     end
 
     # Apply inverse transformation to the forecasts
@@ -102,6 +102,9 @@ Generate forecasts by conditioning on multiple nowcast scenarios.
 - `n_mcmc == 0 && n_hmc > 0` performs parameter-only updates to the _particle ensemble_; `n_mcmc > 0 && n_hmc > 0` performs full MCMC.
 - `forecast_n_hmc` is independent of `n_mcmc` and `n_hmc` and controls HMC steps only during forecasting, not during nowcast incorporation.
 If `n_mcmc == 0 && n_hmc == 0 && forecast_n_hmc > 0`, HMC steps are only taken during forecasting, not during nowcast incorporation.
+- For a `base_model` fitted to [`CountData`](@ref), each nowcast scenario is treated as observed counts: build the
+  scenarios with [`create_nowcast_data`](@ref) without a transformation and leave `inv_transformation` at its default.
+  Nowcast values need not be integers, but they must be non-negative. The returned matrix holds integer counts.
 
 
 # Example
@@ -124,6 +127,9 @@ function forecast_with_nowcasts(
     @assert !(n_mcmc > 0 && n_hmc == 0) "If n_mcmc > 0, n_hmc must also be > 0 for MCMC refinement"
     @assert 0.0 <= ess_threshold <= 1.0 "ess_threshold must be between 0 and 1"
     @assert forecast_n_hmc === nothing||forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
+    for nowcast in nowcasts
+        _check_new_observations(base_model.config.observation_model, nowcast.y)
+    end
 
     base_model_dict = Dict(base_model)
     progress = Progress(length(nowcasts); desc = "Nowcast scenarios: ", enabled = verbose)
