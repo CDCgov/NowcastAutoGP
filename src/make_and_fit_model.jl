@@ -91,3 +91,51 @@ function make_and_fit_model(
     AutoGP.fit_smc!(model; schedule = schedule, kwargs...)
     return model
 end
+
+"""
+    function make_and_fit_model(
+        data::CountData; n_particles, smc_data_proportion,
+        config = AutoGP.GP.GPConfig(), kwargs...
+    )
+
+Create and fit a Gaussian Process (GP) model for count data, using the observation model
+carried by `data` (see [`create_count_data`](@ref) and [`PoissonObservation`](@ref)).
+
+The counts are passed to `AutoGP` as they are, without centering, scaling or jitter.
+Arguments are as for the method for [`TData`](@ref), except that there is no
+`flat_threshold`. The `config` must not already set an `observation_model`; any other
+customisation of the GP prior applies as usual.
+
+# Returns
+- `model`: The fitted GP model. [`forecast`](@ref) and [`forecast_with_nowcasts`](@ref)
+  return counts for it.
+
+# Examples
+```julia
+data = create_count_data(dates, counts)
+model = make_and_fit_model(data; n_particles = 8, n_mcmc = 50, n_hmc = 50)
+```
+"""
+function make_and_fit_model(
+        data::CountData; n_particles = 1, smc_data_proportion = 0.1,
+        config = AutoGP.GP.GPConfig(), kwargs...
+    )
+    isnothing(config.observation_model) || throw(
+        ArgumentError(
+            "`config.observation_model` is already set; choose the observation model " *
+                "with `create_count_data` instead"
+        )
+    )
+    n_train = length(data.values)
+    observation_distribution = _observation_distribution(data.observation_model, data.values)
+    model = AutoGP.GPModel(
+        data.ds, data.values; n_particles = n_particles,
+        config = AutoGP.GP.GPConfig(config; observation_model = observation_distribution),
+        y_transform = LinearTransform(1.0, 0.0)
+    )
+    # Ensure smc_data_proportion results in at least step=1 for the schedule
+    effective_proportion = max(smc_data_proportion, 1.0 / n_train)
+    schedule = AutoGP.Schedule.linear_schedule(n_train, effective_proportion)
+    AutoGP.fit_smc!(model; schedule = schedule, kwargs...)
+    return model
+end
