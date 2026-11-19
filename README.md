@@ -21,9 +21,25 @@ The basic idea is to use the incremental fitting capabilities of [`AutoGP.jl`](h
 
 ## Installation
 
+`NowcastAutoGP.jl` depends on a fork of `AutoGP.jl`, so install both:
+
 ```julia
 using Pkg
-Pkg.add(url="https://github.com/CDCgov/NowcastAutoGP.jl")
+Pkg.add([
+    PackageSpec(url = "https://github.com/SamuelBrand1/AutoGP.jl", rev = "main"),
+    PackageSpec(url = "https://github.com/CDCgov/NowcastAutoGP"),
+])
+```
+
+Adding the fork explicitly is needed on Julia 1.11, which does not pick it up automatically when `NowcastAutoGP.jl` is added to another environment.
+Without the fork, transformed data can still be fitted and forecast, but features that rely on it, such as count observation models, are unavailable.
+
+In a project with its own `Project.toml`, the equivalent is to list `NowcastAutoGP` and `AutoGP` under `[deps]` and give both a source:
+
+```toml
+[sources]
+AutoGP = {url = "https://github.com/SamuelBrand1/AutoGP.jl", rev = "main"}
+NowcastAutoGP = {url = "https://github.com/CDCgov/NowcastAutoGP"}
 ```
 
 ## Example: Forecasting NHSN COVID-19 Hospitalizations with NowcastAutoGP.jl and nowcasting
