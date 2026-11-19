@@ -28,6 +28,20 @@ log-intensity and then draw Poisson counts.
 
 The approximation is accurate for counts of about 10 or more and weakest for runs of zeros,
 where it keeps the fitted rate above roughly 0.14 per time step.
+
+# Requirements
+
+Count observation models use a feature of the `AutoGP` fork that this package depends on.
+Julia 1.11 does not install that fork automatically when `NowcastAutoGP` is added to another
+environment, so add it explicitly there:
+
+```julia
+using Pkg
+Pkg.add(url = "https://github.com/SamuelBrand1/AutoGP.jl", rev = "main")
+```
+
+Without it, fitting count data throws an error that says so; models for transformed data
+are unaffected.
 """
 struct PoissonObservation end
 
@@ -177,6 +191,23 @@ _sample_counts(eta) = rand.(Poisson.(min.(exp.(eta), MAX_INTENSITY)))
 # The `AutoGP` observation distribution for an observation model and its training data.
 _observation_distribution(::PoissonObservation, values) = PoissonFixedSites(values)
 
+# The observation model of an `AutoGP` configuration, or `nothing` for Gaussian noise.
+# Versions of `AutoGP` without support for observation models have no such field, and
+# models fitted with them always have Gaussian noise.
+function _observation_model(config)
+    return hasproperty(config, :observation_model) ? config.observation_model : nothing
+end
+
+# Count observation models need an `AutoGP` that supports observation models.
+function _require_observation_model_support()
+    hasfield(AutoGP.GP.GPConfig, :observation_model) && return nothing
+    return error(
+        "Count observation models need a version of AutoGP that supports observation " *
+            "models, but the installed AutoGP does not. Install it with " *
+            "`Pkg.add(url = \"https://github.com/SamuelBrand1/AutoGP.jl\", rev = \"main\")`."
+    )
+end
+
 """
     _site_conditional(kernel, noise, ts, z, v, ts_pred)
 
@@ -217,7 +248,7 @@ end
 # Draws from the predictive distribution of a fitted model, on the scale the model was
 # fitted on. Returns a matrix with one row per date and one column per draw.
 function _sample_predictive(model::AutoGP.GPModel, dates, n_draws::Int)
-    return _sample_predictive(model.config.observation_model, model, dates, n_draws)
+    return _sample_predictive(_observation_model(model.config), model, dates, n_draws)
 end
 
 function _sample_predictive(::Nothing, model::AutoGP.GPModel, dates, n_draws::Int)

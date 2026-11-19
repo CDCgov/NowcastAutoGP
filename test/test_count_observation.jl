@@ -223,6 +223,21 @@ end
     @test sum(zero_forecasts) / length(zero_forecasts) < 2
 end
 
+@testitem "AutoGP versions without observation models" begin
+    using NowcastAutoGP: _observation_model, _require_observation_model_support
+
+    # A configuration without the field, as in AutoGP versions that lack observation
+    # models, is treated as having Gaussian noise.
+    @test isnothing(_observation_model((noise = nothing, max_depth = -1)))
+    @test isnothing(_observation_model(GPConfig()))
+
+    distribution = NowcastAutoGP.PoissonFixedSites(1.0, 1.0)
+    @test _observation_model(GPConfig(observation_model = distribution)) === distribution
+
+    # The AutoGP used for testing supports observation models.
+    @test isnothing(_require_observation_model_support())
+end
+
 @testitem "make_and_fit_model rejects a preset observation model" begin
     using Dates
     dates = collect(Date(2024, 1, 6):Week(1):Date(2024, 3, 30))

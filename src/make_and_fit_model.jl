@@ -120,7 +120,8 @@ function make_and_fit_model(
         data::CountData; n_particles = 1, smc_data_proportion = 0.1,
         config = AutoGP.GP.GPConfig(), kwargs...
     )
-    isnothing(config.observation_model) || throw(
+    _require_observation_model_support()
+    isnothing(_observation_model(config)) || throw(
         ArgumentError(
             "`config.observation_model` is already set; choose the observation model " *
                 "with `create_count_data` instead"

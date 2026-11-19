@@ -128,7 +128,7 @@ function forecast_with_nowcasts(
     @assert 0.0 <= ess_threshold <= 1.0 "ess_threshold must be between 0 and 1"
     @assert forecast_n_hmc === nothing||forecast_n_hmc > 0 "forecast_n_hmc must be > 0 if specified"
     for nowcast in nowcasts
-        _check_new_observations(base_model.config.observation_model, nowcast.y)
+        _check_new_observations(_observation_model(base_model.config), nowcast.y)
     end
 
     base_model_dict = Dict(base_model)
